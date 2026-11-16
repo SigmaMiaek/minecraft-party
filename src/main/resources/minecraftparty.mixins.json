@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "pl.minecraftparty.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "IntegratedServerAccess",
+    "ServerConnectionAccess",
+    "PartyOperatorListMixin",
+    "PartyOperatorPermissionsMixin",
+    "PartyTeleportMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

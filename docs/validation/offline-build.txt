@@ -1,0 +1,58 @@
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:520: warning: [removal] getPeerCertificateChain() in SSLSession has been deprecated and marked for removal
+        public X509Certificate[] getPeerCertificateChain() throws SSLPeerUnverifiedException {
+                                 ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:287: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+        private X509Certificate[] x509PeerCerts;
+                ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:347: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+                    x509PeerCerts = new X509Certificate[chain.length];
+                                        ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:362: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+                        x509PeerCerts = new X509Certificate[] {new LazyJavaxX509Certificate(clientCert)};
+                                            ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:365: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+                        x509PeerCerts = new X509Certificate[chain.length + 1];
+                                            ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:520: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+        public X509Certificate[] getPeerCertificateChain() throws SSLPeerUnverifiedException {
+               ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslContext.java:468: warning: [removal] finalize() in Object has been deprecated and marked for removal
+    protected void finalize() throws Throwable {
+                   ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslContext.java:472: warning: [removal] finalize() in Object has been deprecated and marked for removal
+            super.finalize();
+                 ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicConnection.java:226: warning: [removal] finalize() in Object has been deprecated and marked for removal
+    protected void finalize() throws Throwable {
+                   ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicConnection.java:230: warning: [removal] finalize() in Object has been deprecated and marked for removal
+            super.finalize();
+                 ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheConfig.java:125: warning: [removal] finalize() in Object has been deprecated and marked for removal
+    protected void finalize() throws Throwable {
+                   ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheConfig.java:129: warning: [removal] finalize() in Object has been deprecated and marked for removal
+            super.finalize();
+                 ^
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+12 warnings
+NETWORK TESTS EXCLUDED explicitly: no claim of tested connections.
+
+Test run finished after 901 ms
+[        13 containers found      ]
+[         0 containers skipped    ]
+[        13 containers started    ]
+[         0 containers aborted    ]
+[        13 containers successful ]
+[         0 containers failed     ]
+[        65 tests found           ]
+[         0 tests skipped         ]
+[        65 tests started         ]
+[         0 tests aborted         ]
+[        65 tests successful      ]
+[         0 tests failed          ]
+
+Built /home/adam/Pobrane/minecraft-party/build/libs/minecraft-party-0.5.2+26.2.jar (javac fallback, NOT a successful Gradle invocation)

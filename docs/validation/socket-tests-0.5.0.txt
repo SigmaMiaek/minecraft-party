@@ -1,0 +1,114 @@
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:520: warning: [removal] getPeerCertificateChain() in SSLSession has been deprecated and marked for removal
+        public X509Certificate[] getPeerCertificateChain() throws SSLPeerUnverifiedException {
+                                 ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:287: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+        private X509Certificate[] x509PeerCerts;
+                ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:347: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+                    x509PeerCerts = new X509Certificate[chain.length];
+                                        ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:362: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+                        x509PeerCerts = new X509Certificate[] {new LazyJavaxX509Certificate(clientCert)};
+                                            ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:365: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+                        x509PeerCerts = new X509Certificate[chain.length + 1];
+                                            ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:520: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+        public X509Certificate[] getPeerCertificateChain() throws SSLPeerUnverifiedException {
+               ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslContext.java:468: warning: [removal] finalize() in Object has been deprecated and marked for removal
+    protected void finalize() throws Throwable {
+                   ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslContext.java:472: warning: [removal] finalize() in Object has been deprecated and marked for removal
+            super.finalize();
+                 ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicConnection.java:226: warning: [removal] finalize() in Object has been deprecated and marked for removal
+    protected void finalize() throws Throwable {
+                   ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicConnection.java:230: warning: [removal] finalize() in Object has been deprecated and marked for removal
+            super.finalize();
+                 ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheConfig.java:125: warning: [removal] finalize() in Object has been deprecated and marked for removal
+    protected void finalize() throws Throwable {
+                   ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheConfig.java:129: warning: [removal] finalize() in Object has been deprecated and marked for removal
+            super.finalize();
+                 ^
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+12 warnings
+
+Test run finished after 756 ms
+[        13 containers found      ]
+[         0 containers skipped    ]
+[        13 containers started    ]
+[         0 containers aborted    ]
+[        13 containers successful ]
+[         0 containers failed     ]
+[        64 tests found           ]
+[         0 tests skipped         ]
+[        64 tests started         ]
+[         0 tests aborted         ]
+[        60 tests successful      ]
+[         4 tests failed          ]
+
+
+Failures (4):
+  JUnit Jupiter:TransportIntegrationTest:lobbySynchronizesAndRevocationRejectsOldInvites()
+    MethodSource [className = 'pl.minecraftparty.core.TransportIntegrationTest', methodName = 'lobbySynchronizesAndRevocationRejectsOldInvites', methodParameterTypes = '']
+    => java.net.SocketException: Operation not permitted
+       java.base/sun.nio.ch.Net.socket0(Native Method)
+       java.base/sun.nio.ch.Net.serverSocket(Net.java:501)
+       java.base/sun.nio.ch.Net.serverSocket(Net.java:495)
+       java.base/sun.nio.ch.NioSocketImpl.create(NioSocketImpl.java:471)
+       java.base/java.net.ServerSocket.getImpl(ServerSocket.java:255)
+       java.base/java.net.ServerSocket.bind(ServerSocket.java:325)
+       java.base/java.net.ServerSocket.<init>(ServerSocket.java:222)
+       java.base/javax.net.ssl.SSLServerSocket.<init>(SSLServerSocket.java:155)
+       java.base/sun.security.ssl.SSLServerSocketImpl.<init>(SSLServerSocketImpl.java:80)
+       java.base/sun.security.ssl.SSLServerSocketFactoryImpl.createServerSocket(SSLServerSocketFactoryImpl.java:87)
+       [...]
+  JUnit Jupiter:TransportIntegrationTest:chatAndSharedMultiplayerDestinationSynchronizeOverTls()
+    MethodSource [className = 'pl.minecraftparty.core.TransportIntegrationTest', methodName = 'chatAndSharedMultiplayerDestinationSynchronizeOverTls', methodParameterTypes = '']
+    => java.net.SocketException: Operation not permitted
+       java.base/sun.nio.ch.Net.socket0(Native Method)
+       java.base/sun.nio.ch.Net.serverSocket(Net.java:501)
+       java.base/sun.nio.ch.Net.serverSocket(Net.java:495)
+       java.base/sun.nio.ch.NioSocketImpl.create(NioSocketImpl.java:471)
+       java.base/java.net.ServerSocket.getImpl(ServerSocket.java:255)
+       java.base/java.net.ServerSocket.bind(ServerSocket.java:325)
+       java.base/java.net.ServerSocket.<init>(ServerSocket.java:222)
+       java.base/javax.net.ssl.SSLServerSocket.<init>(SSLServerSocket.java:155)
+       java.base/sun.security.ssl.SSLServerSocketImpl.<init>(SSLServerSocketImpl.java:80)
+       java.base/sun.security.ssl.SSLServerSocketFactoryImpl.createServerSocket(SSLServerSocketFactoryImpl.java:87)
+       [...]
+  JUnit Jupiter:TransportIntegrationTest:rawMinecraftBytesPassThroughTlsAndLobbySurvivesTwoWorlds()
+    MethodSource [className = 'pl.minecraftparty.core.TransportIntegrationTest', methodName = 'rawMinecraftBytesPassThroughTlsAndLobbySurvivesTwoWorlds', methodParameterTypes = '']
+    => java.net.SocketException: Operation not permitted
+       java.base/sun.nio.ch.Net.socket0(Native Method)
+       java.base/sun.nio.ch.Net.serverSocket(Net.java:501)
+       java.base/sun.nio.ch.Net.serverSocket(Net.java:495)
+       java.base/sun.nio.ch.NioSocketImpl.create(NioSocketImpl.java:471)
+       java.base/java.net.ServerSocket.getImpl(ServerSocket.java:255)
+       java.base/java.net.ServerSocket.bind(ServerSocket.java:325)
+       java.base/java.net.ServerSocket.<init>(ServerSocket.java:222)
+       java.base/javax.net.ssl.SSLServerSocket.<init>(SSLServerSocket.java:155)
+       java.base/sun.security.ssl.SSLServerSocketImpl.<init>(SSLServerSocketImpl.java:80)
+       java.base/sun.security.ssl.SSLServerSocketFactoryImpl.createServerSocket(SSLServerSocketFactoryImpl.java:87)
+       [...]
+  JUnit Jupiter:TransportIntegrationTest:kickDisconnectsMemberAndRotatesInvite()
+    MethodSource [className = 'pl.minecraftparty.core.TransportIntegrationTest', methodName = 'kickDisconnectsMemberAndRotatesInvite', methodParameterTypes = '']
+    => java.net.SocketException: Operation not permitted
+       java.base/sun.nio.ch.Net.socket0(Native Method)
+       java.base/sun.nio.ch.Net.serverSocket(Net.java:501)
+       java.base/sun.nio.ch.Net.serverSocket(Net.java:495)
+       java.base/sun.nio.ch.NioSocketImpl.create(NioSocketImpl.java:471)
+       java.base/java.net.ServerSocket.getImpl(ServerSocket.java:255)
+       java.base/java.net.ServerSocket.bind(ServerSocket.java:325)
+       java.base/java.net.ServerSocket.<init>(ServerSocket.java:222)
+       java.base/javax.net.ssl.SSLServerSocket.<init>(SSLServerSocket.java:155)
+       java.base/sun.security.ssl.SSLServerSocketImpl.<init>(SSLServerSocketImpl.java:80)
+       java.base/sun.security.ssl.SSLServerSocketFactoryImpl.createServerSocket(SSLServerSocketFactoryImpl.java:87)
+       [...]

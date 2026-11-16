@@ -1,0 +1,4 @@
+Artifact OK: minecraft-party-0.5.2+26.2.jar; 116 translations in each language; accessor targets match Minecraft 26.2.
+Permission hook targets exist; vanilla teleport has the two expected command-root predicates.
+Vendored QUIC classes, native SHA-256 pins and third-party licenses are present; no native library was loaded by this check.
+Static artifact checks only; no claim of runtime Mixin, UI or multiplayer verification.

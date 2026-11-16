@@ -1,0 +1,1 @@
+Vendored QUIC provenance verified against commit adb76feb04d014ad5fd00e5727b78ac5ada9e1fb: 104 exact upstream files, 2 documented modifications.

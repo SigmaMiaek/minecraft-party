@@ -1,0 +1,5 @@
+0.5.2 packaged RoutingGate invokes Channel.read after a routing-only frame.
+The manual-read regression failed before the fix and passes after it.
+65 socket-free tests passed, including foreign menu eligibility and protected connection/loading screens.
+Packaged EN/PL relay TLS messages and mp3 hints verified.
+Static checks and socket-free tests only; no Lunar or live e4mc session was run by the tools.

@@ -1,0 +1,4 @@
+Packaged PartyScreen calls Invite.hasSupportedPrefix.
+Packaged EN/PL input hints include mp3 and mp2.
+Generated direct/relay invitations and clipboard whitespace are covered by the passing regression test.
+Static bytecode/resource checks only; live Minecraft UI was not started.

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "minecraftparty",
+  "version": "${version}",
+  "name": "Minecraft Party",
+  "description": "Party lobby, private chat, encrypted world sharing through e4mc relay or direct IPv4/UPnP, and following the host to multiplayer servers.",
+  "authors": ["Minecraft Party contributors"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {"client": ["pl.minecraftparty.PartyClient"]},
+  "mixins": ["minecraftparty.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "26.2",
+    "java": ">=25",
+    "fabric-api": ">=0.161.0"
+  }
+}

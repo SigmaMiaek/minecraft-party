@@ -1,0 +1,435 @@
+{
+  "repository": "https://github.com/vgskye/netty-incubator-codec-quic",
+  "commit": "adb76feb04d014ad5fd00e5727b78ac5ada9e1fb",
+  "upstream_path": "codec-classes-quic",
+  "files": [
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSL.java",
+      "upstream_blob": "27546d6de3d3228580c7283c80fe269cce304f66"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLAsyncPrivateKeyMethod.java",
+      "upstream_blob": "0df495d52a08bbed6f7863552fbd4fa6a960e7d7"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLCertificateCallback.java",
+      "upstream_blob": "3e4b9be129403cb919844d525ebd43892b063ad9"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLCertificateCallbackTask.java",
+      "upstream_blob": "0bbe37620911407ceef0924a8837f2b185177063"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLCertificateVerifyCallback.java",
+      "upstream_blob": "c43afdbb73d196aa6999b5cf6d234f5dd709b306"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLCertificateVerifyCallbackTask.java",
+      "upstream_blob": "2b35235e61121ed40e8d8b8d2706adf38e97c761"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLContextOption.java",
+      "upstream_blob": "3ff2ad038574adb5fa948e6bb9658ef67eebe3b0"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLHandshakeCompleteCallback.java",
+      "upstream_blob": "6d322cd13c55b1f6dcd267fedc08181836b6493d"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLKeylessManagerFactory.java",
+      "upstream_blob": "aa8cce5dfdaa128b94c46e6659e13ac2b6cc68e5"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLKeylessPrivateKey.java",
+      "upstream_blob": "5b169b7c25769adca6b8843f818453d6317c83eb"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLKeylog.java",
+      "upstream_blob": "5b17f8d41c8bd76f4870fadb5a138d47c40066db"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLKeylogCallback.java",
+      "upstream_blob": "65840f9902f65df2deac1689be93b65996942b29"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLLoggingKeylog.java",
+      "upstream_blob": "65a6167b3618d7716d308f38ea261cbd17f0b532"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLNativeStaticallyReferencedJniMethods.java",
+      "upstream_blob": "691399bd19f1b4046849e090bc787e3da074a750"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLPrivateKeyMethod.java",
+      "upstream_blob": "3ff03ed27879284b82b0553505d378128e463f71"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLPrivateKeyMethodDecryptTask.java",
+      "upstream_blob": "49f3a3928d50bd103a63bcbd00bd287466b6d028"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLPrivateKeyMethodSignTask.java",
+      "upstream_blob": "0b8fec00446101199fe62e5c20bdd798caaca7bf"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLPrivateKeyMethodTask.java",
+      "upstream_blob": "e94c05f1aadebdb8b5c3c717bec6b6f2e67afd46"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLSessionCallback.java",
+      "upstream_blob": "7c8a4caa0f2a02acaf65899cbde548a737f52acf"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLSessionTicketCallback.java",
+      "upstream_blob": "ead310702b04be7856290bc07328c55bfe9a5810"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLTask.java",
+      "upstream_blob": "acb70ff6596c31398dc119d8fa66ba500adbbfc7"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/BoringSSLTlsextServernameCallback.java",
+      "upstream_blob": "16e38411f0e48d90b75a94f6f63eeef0f98d9ac8"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/ConnectionIdChannelMap.java",
+      "upstream_blob": "eab933619e64125073f90158bf481a08ca9d1e75"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/DefaultQuicStreamFrame.java",
+      "upstream_blob": "4514a8f433824cf42c57fb494e81bf8e4afe7a09"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/DirectIoByteBufAllocator.java",
+      "upstream_blob": "14c44b11518549ae354a47ed69f960e87a49a88d"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/EpollQuicUtils.java",
+      "upstream_blob": "15e7b36b4d0a97a3d6959da61f9b0f238bbeec10"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/FlushStrategy.java",
+      "upstream_blob": "9f6fb362c2ddea037b495f8e7980b2d15ee3f76b"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/GroupsConverter.java",
+      "upstream_blob": "9b9533fa1a410babb7fd8f0a26624835233fce0b"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/Hmac.java",
+      "upstream_blob": "fecc210bb6436b1c22eb32c796e2dce54e634b27"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/HmacSignQuicConnectionIdGenerator.java",
+      "upstream_blob": "374a102529368c0db37c6775667577bf1ce39b1f"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/HmacSignQuicResetTokenGenerator.java",
+      "upstream_blob": "03b88cf52bb8cc96d56dbe0d86271ea19348b8dd"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/InsecureQuicTokenHandler.java",
+      "upstream_blob": "059d4f981da34d0a68e7826003afff9cbfeea8ba"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/NoQuicTokenHandler.java",
+      "upstream_blob": "5ed1aa24a1f460620a711de9d4f80d9300cacc26"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/NotNullByDefault.java",
+      "upstream_blob": "300a93769157a005619bb1e54649388cd5322506"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QLogConfiguration.java",
+      "upstream_blob": "c635ba1e445ee3f0ec0ab8a5b54d3d1825274a36"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/Quic.java",
+      "upstream_blob": "22923683ceb9fee92c7be9b14e5c4cd490633cfd"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicChannel.java",
+      "upstream_blob": "d886a424ad34318e1d65e26f85d646ca2b6dfb2b"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicChannelBootstrap.java",
+      "upstream_blob": "130c7ec51e68a9d9b5b5f4f06232f2c97773e2b6"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicChannelConfig.java",
+      "upstream_blob": "bc3135b0112441d3161262419070a7d2203cdb4c"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicChannelOption.java",
+      "upstream_blob": "8d776cfde7a19f8f805339b85239976f362ece49"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicClientCodecBuilder.java",
+      "upstream_blob": "0ff9f6481b6a63acbc4b90e23e1808f9a658f5b5"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicClientSessionCache.java",
+      "upstream_blob": "136be5495b6d79a7093c91ef6b0172eeed2142c6"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicClosedChannelException.java",
+      "upstream_blob": "520733c3cbbcecdb5f75e3473f5bdc170544b6b9"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicCodecBuilder.java",
+      "upstream_blob": "7c01e2d670cd738117aca83f3c21e4e1f519f5ce"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicCodecDispatcher.java",
+      "upstream_blob": "139765273aacac79f0e9ffb8ea4f8dc37dd9f9a7"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicCongestionControlAlgorithm.java",
+      "upstream_blob": "6f9aa15839b62fbae7668eacc551da440d7124cd"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicConnectionAddress.java",
+      "upstream_blob": "b84468837dc1b9d4dffae629c6d6cd4a760e030b"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicConnectionCloseEvent.java",
+      "upstream_blob": "37dfc241abd23482266060b8ca02a7a7a2eddf9d"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicConnectionIdGenerator.java",
+      "upstream_blob": "0354506cceb9d28e4b2e871fc6ad3a7118ec6b69"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicConnectionPathStats.java",
+      "upstream_blob": "3697362c45c2b897c59655f29d0ecf3fc38ad26a"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicConnectionStats.java",
+      "upstream_blob": "0be920974d3b9a481db8fa9c461b350df5ceea80"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicDatagramExtensionEvent.java",
+      "upstream_blob": "d7daf61fd771882a4921941cd39920b41ef2644d"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicEvent.java",
+      "upstream_blob": "029511d71988374c288a1b144c9d15c5b5ec200b"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicException.java",
+      "upstream_blob": "1d4cf0185a152f6dc727c3ed00a85d9ed79b0e2f"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicExtensionEvent.java",
+      "upstream_blob": "ab64094d907818186c2476dc62f585ef91fd2214"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicHeaderParser.java",
+      "upstream_blob": "0f7f14866dcb1c3811ccfb0a9fbe72c0cc4f66c2"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicPacketType.java",
+      "upstream_blob": "bc2ea6998a0cb19de1e2b543c001ea153acbc190"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicPathEvent.java",
+      "upstream_blob": "4d610b56aead2b75e98ff1e256688f711022acc8"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicResetTokenGenerator.java",
+      "upstream_blob": "484699011a8f298196e7a237e82c09fef834426b"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicServerCodecBuilder.java",
+      "upstream_blob": "5cf6356c672d1c011a31312495e2ddafe7242218"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicSslContext.java",
+      "upstream_blob": "7a3436ae8e40eb002c3f4cb61ed453d17c2871d5"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicSslContextBuilder.java",
+      "upstream_blob": "7adba7f4788bdb19d449d92eb4edbb4e8f92df02"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicSslEngine.java",
+      "upstream_blob": "2b0cbb137d64b7ea442d3e03df40a8159ff627fb"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicSslSessionContext.java",
+      "upstream_blob": "63433b67b672a95f2a190c28514f59197acc4a0b"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicStreamAddress.java",
+      "upstream_blob": "127b58575f41a2cba09ae2f8892f555dcaa9e360"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicStreamChannel.java",
+      "upstream_blob": "b3bba6127f338800140dcd0a6e5577287dc6175f"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicStreamChannelBootstrap.java",
+      "upstream_blob": "cbba0d3f3426d7464588faca91ced4986bef23be"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicStreamChannelConfig.java",
+      "upstream_blob": "50e2179db54bcb5ac56c81333806e74f4f619ec5"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicStreamFrame.java",
+      "upstream_blob": "517fbe2dbf3553415b3d0e26173a155d25725998"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicStreamIdGenerator.java",
+      "upstream_blob": "aaa43af20f0fd9872efcef59270b2c053432c141"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicStreamLimitChangedEvent.java",
+      "upstream_blob": "49a1986b6709ea7b9a5c667d364c7801cb80e3e4"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicStreamPriority.java",
+      "upstream_blob": "8463593a07ac1c603ba748673f24dbcb58a68987"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicStreamType.java",
+      "upstream_blob": "914ec5e92c4d4009f97ee1915abed8f26977bfda"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicTimeoutClosedChannelException.java",
+      "upstream_blob": "b650761684863565e0e97920b991ed0e8337642f"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicTokenHandler.java",
+      "upstream_blob": "4c36919212e6fa8883687232330e7f05528f93ab"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicTransportError.java",
+      "upstream_blob": "4bb0215ef2d7d0ffcb84d3e29945d5470f7d71b5"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicTransportParameters.java",
+      "upstream_blob": "d6c63516a0d77616c4b7687b749902c2e1d35e0e"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/Quiche.java",
+      "upstream_blob": "624c640f58659b4542a0f77da0c492f9cde7b22b"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheConfig.java",
+      "upstream_blob": "1fee532923d317906c34a7e72c31ad430d0d8718"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheError.java",
+      "upstream_blob": "7cfb6a51522135893460d6f92f3f01dcb8a92440"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheLogger.java",
+      "upstream_blob": "73c6f2dce3442257d9910568fc1f0d6bd301eb4d"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheNativeStaticallyReferencedJniMethods.java",
+      "upstream_blob": "251a806551e0947a62611906f090c70e10e035a0"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicChannel.java",
+      "upstream_blob": "7fc45f4125fa098b447345a16cf7c13b80d746cd"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicChannelAddress.java",
+      "upstream_blob": "015bd7e0112276ee4dc89664a93890ab8a790f57"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicChannelConfig.java",
+      "upstream_blob": "8b8764d4f92cd53b760084f52b4fcd5a1789e890"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicClientCodec.java",
+      "upstream_blob": "bba429ccb951bb4bd7336b54a82a61fda1bcb4cb"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicCodec.java",
+      "upstream_blob": "082fea877b500871c48414d36d4f5b34a7e27b7f"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicConnection.java",
+      "upstream_blob": "ae5dd687d11ed6a7fb5bacc82e09967cb814e452"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicConnectionPathStats.java",
+      "upstream_blob": "db7d3924b910fd7198ba6e5bd046fb0a6d5df2be"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicConnectionStats.java",
+      "upstream_blob": "489c3f64b948b8a6bfeff2f3180ef0238476036d"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicServerCodec.java",
+      "upstream_blob": "22b5d6659665a586ccdb7065cc51e16556316845"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslContext.java",
+      "upstream_blob": "c3bed65638fde1061980bfbb0da13f2667386d7b"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java",
+      "upstream_blob": "b27f546d704b7fe9d186293242fe6b0eed9ab595"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngineMap.java",
+      "upstream_blob": "86965758f36941f3cd768533716f569817b04884"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicStreamChannel.java",
+      "upstream_blob": "5c600d288ecb1916b0b42ce34d396d5b089ba3b7"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicStreamChannelConfig.java",
+      "upstream_blob": "1e282a73939e55023162651cb4bfffd05575a40c"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheQuicTransportParameters.java",
+      "upstream_blob": "f241a4ced48747918f7d93133bcfbe488a6692e1"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheRecvInfo.java",
+      "upstream_blob": "7a682fe3bfe063f7312bb0c28d1b3ceeef6fc5c8"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/QuicheSendInfo.java",
+      "upstream_blob": "4c67cd9a58aa21318edd50a8a2f978c6ecd53c69"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/SecureRandomQuicConnectionIdGenerator.java",
+      "upstream_blob": "8007f0bce66d1f8c3ffb636cae5e4619c4fe2e8e"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/SegmentedDatagramPacketAllocator.java",
+      "upstream_blob": "f9591bdab90c9df853c763f1e22c4d39f09d20d0"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/SipHash.java",
+      "upstream_blob": "86291a6e2c24a564bf398155ecf1c91f49c2c963"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/SockaddrIn.java",
+      "upstream_blob": "0a5888a08c9b813a0614ba7459ec31a0b02a770c"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/SslEarlyDataReadyEvent.java",
+      "upstream_blob": "2fda396d6c7dfad52c4cc60d0e64154d43aa6d52"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/SslSessionTicketKey.java",
+      "upstream_blob": "c8e7ea5e793128bafed2194dbbfb2ad16a9c08a3"
+    },
+    {
+      "path": "src/main/java/io/netty/incubator/codec/quic/package-info.java",
+      "upstream_blob": "4325c25086f50dd9f0d7cb4d53cc09a3aae90aca"
+    }
+  ],
+  "modified": [
+    "src/main/java/io/netty/incubator/codec/quic/Quiche.java",
+    "src/main/java/io/netty/incubator/codec/quic/NotNullByDefault.java"
+  ]
+}

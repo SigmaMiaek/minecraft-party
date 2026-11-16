@@ -1,0 +1,71 @@
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:520: warning: [removal] getPeerCertificateChain() in SSLSession has been deprecated and marked for removal
+        public X509Certificate[] getPeerCertificateChain() throws SSLPeerUnverifiedException {
+                                 ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:287: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+        private X509Certificate[] x509PeerCerts;
+                ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:347: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+                    x509PeerCerts = new X509Certificate[chain.length];
+                                        ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:362: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+                        x509PeerCerts = new X509Certificate[] {new LazyJavaxX509Certificate(clientCert)};
+                                            ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:365: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+                        x509PeerCerts = new X509Certificate[chain.length + 1];
+                                            ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslEngine.java:520: warning: [removal] X509Certificate in javax.security.cert has been deprecated and marked for removal
+        public X509Certificate[] getPeerCertificateChain() throws SSLPeerUnverifiedException {
+               ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslContext.java:468: warning: [removal] finalize() in Object has been deprecated and marked for removal
+    protected void finalize() throws Throwable {
+                   ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicSslContext.java:472: warning: [removal] finalize() in Object has been deprecated and marked for removal
+            super.finalize();
+                 ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicConnection.java:226: warning: [removal] finalize() in Object has been deprecated and marked for removal
+    protected void finalize() throws Throwable {
+                   ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheQuicConnection.java:230: warning: [removal] finalize() in Object has been deprecated and marked for removal
+            super.finalize();
+                 ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheConfig.java:125: warning: [removal] finalize() in Object has been deprecated and marked for removal
+    protected void finalize() throws Throwable {
+                   ^
+/home/adam/Pobrane/minecraft-party/vendor/netty-quic/src/main/java/io/netty/incubator/codec/quic/QuicheConfig.java:129: warning: [removal] finalize() in Object has been deprecated and marked for removal
+            super.finalize();
+                 ^
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+12 warnings
+NETWORK TESTS EXCLUDED explicitly: no claim of tested connections.
+
+Test run finished after 805 ms
+[        12 containers found      ]
+[         0 containers skipped    ]
+[        12 containers started    ]
+[         0 containers aborted    ]
+[        12 containers successful ]
+[         0 containers failed     ]
+[        62 tests found           ]
+[         0 tests skipped         ]
+[        62 tests started         ]
+[         0 tests aborted         ]
+[        61 tests successful      ]
+[         1 tests failed          ]
+
+
+Failures (1):
+  JUnit Jupiter:E4mcRelayGateTest:aRoutingPrefaceWithoutTlsBytesRearmsTheManuallyReadStream()
+    MethodSource [className = 'pl.minecraftparty.network.E4mcRelayGateTest', methodName = 'aRoutingPrefaceWithoutTlsBytesRearmsTheManuallyReadStream', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: After consuming only the routing preface, another read must receive the TLS ClientHello ==> expected: <true> but was: <false>
+       org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+       org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+       org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+       org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+       org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:214)
+       pl.minecraftparty.network.E4mcRelayGateTest.aRoutingPrefaceWithoutTlsBytesRearmsTheManuallyReadStream(E4mcRelayGateTest.java:59)
+       java.base/java.lang.reflect.Method.invoke(Method.java:565)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
