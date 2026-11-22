@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Actual loopback sockets and TLS; not a substitute for tests with Minecraft clients. */
 @Tag("network")
-@Timeout(20)
+@Timeout(value = 20, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
 class TransportIntegrationTest {
     @Test void chatAndSharedMultiplayerDestinationSynchronizeOverTls() throws Exception {
         AtomicReference<LobbyState> state = new AtomicReference<>();

@@ -12,4 +12,10 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
-test { useJUnitPlatform() }
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'started', 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+    }
+}
