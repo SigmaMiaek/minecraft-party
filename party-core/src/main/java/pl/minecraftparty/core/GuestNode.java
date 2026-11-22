@@ -63,7 +63,8 @@ public final class GuestNode implements AutoCloseable {
     private void run() {
         long lostAt = 0;
         while (!closed) {
-            try (SSLSocket socket = connect()) {
+            try (var connection = connect()) {
+                SSLSocket socket = connection.socket();
                 control = socket;
                 var out = new DataOutputStream(socket.getOutputStream());
                 var in = new DataInputStream(socket.getInputStream());
@@ -126,7 +127,7 @@ public final class GuestNode implements AutoCloseable {
         } catch (IOException e) { SocketPipe.close(socket); }
         catch (InterruptedException e) { Thread.currentThread().interrupt(); }
     }
-    private SSLSocket connect() throws IOException {
+    private SocketPipe.TlsConnection connect() throws IOException {
         NetworkFailure best = null; int candidateNumber = 0;
         for (String candidate : invite.relay() ? java.util.List.of(invite.relayDomain()) : invite.candidates()) {
             if (closed) throw new IOException("closed");
@@ -144,13 +145,14 @@ public final class GuestNode implements AutoCloseable {
                 phase = NetworkFailure.Phase.TLS;
                 if (invite.relay()) { raw.getOutputStream().write(E4mcProtocol.routingPreface(candidate)); raw.getOutputStream().flush(); }
                 socket = (SSLSocket) tls.getSocketFactory().createSocket(raw, candidate, invite.port(), true);
+                SocketPipe.track(socket, raw);
                 pending.compareAndSet(raw, socket);
                 if (closed) throw new IOException("closed");
                 socket.setEnabledProtocols(new String[]{"TLSv1.3"}); socket.setSoTimeout(10000);
                 socket.startHandshake();
                 trace.mark(candidateNumber, phase, ConnectionTrace.Event.CONNECTED);
                 connectedCandidate = candidateNumber;
-                return socket;
+                return new SocketPipe.TlsConnection(socket);
             } catch (IOException e) {
                 SocketPipe.close(socket);
                 SocketPipe.close(raw);
@@ -200,7 +202,8 @@ public final class GuestNode implements AutoCloseable {
                 minecraft = client; SocketPipe.close(local);
                 if (stopped) return;
                 client.setTcpNoDelay(true);
-                try (SSLSocket socket = connect()) {
+                try (var connection = connect()) {
+                    SSLSocket socket = connection.socket();
                     remote = socket;
                     if (stopped) return;
                     var out = new DataOutputStream(socket.getOutputStream()); var in = new DataInputStream(socket.getInputStream());

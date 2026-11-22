@@ -14,7 +14,7 @@ public final class HostNode implements AutoCloseable {
     private final LobbyModel model;
     private final UUID hostId;
     private final TlsIdentity identity;
-    private final SSLServerSocket listener;
+    private final ServerSocket listener;
     private final List<String> candidates;
     private final Map<UUID, Control> controls = new HashMap<>();
     private final Set<UUID> playersInWorld = new HashSet<>();
@@ -64,8 +64,7 @@ public final class HostNode implements AutoCloseable {
         this.identity = TlsIdentity.create(); this.candidates = List.copyOf(candidates); this.onState = onState;
         // Validate everything before opening the socket.
         new Invite(model.snapshot().partyId(), candidates, 1, identity.fingerprint(), model.inviteSecret(), model.inviteExpires());
-        listener = (SSLServerSocket) identity.context().getServerSocketFactory().createServerSocket(0, 32, bind);
-        listener.setEnabledProtocols(new String[]{"TLSv1.3"});
+        listener = new ServerSocket(0, 32, bind);
         Thread.ofVirtual().name("party-host-accept").start(this::accept);
         maintenance = Thread.ofVirtual().name("party-host-maintenance").start(() -> {
             try {
@@ -146,15 +145,23 @@ public final class HostNode implements AutoCloseable {
     private void accept() {
         while (!closed) {
             try {
-                SSLSocket socket = (SSLSocket) listener.accept();
+                Socket transport = listener.accept();
                 tcpAccepted.incrementAndGet();
-                if (!slots.tryAcquire()) { socket.close(); continue; }
+                if (!slots.tryAcquire()) { transport.close(); continue; }
+                SSLSocket socket;
+                try {
+                    socket = (SSLSocket) identity.context().getSocketFactory().createSocket(transport,
+                            transport.getInetAddress().getHostAddress(), transport.getPort(), true);
+                    socket.setUseClientMode(false);
+                    socket.setEnabledProtocols(new String[]{"TLSv1.3"});
+                    SocketPipe.track(socket, transport);
+                } catch (IOException | RuntimeException e) { SocketPipe.close(transport); slots.release(); continue; }
                 sockets.add(socket);
                 Thread.ofVirtual().name("party-host-peer").start(() -> {
-                    try (socket) { handle(socket); }
+                    try { handle(socket); }
                     catch (IOException | GeneralSecurityException | IllegalArgumentException | SecurityException ignored) { /* Untrusted peer; no secret-bearing log. */ }
                     catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-                    finally { sockets.remove(socket); slots.release(); }
+                    finally { SocketPipe.close(socket); sockets.remove(socket); slots.release(); }
                 });
             } catch (IOException e) { if (!closed) close(); }
         }
