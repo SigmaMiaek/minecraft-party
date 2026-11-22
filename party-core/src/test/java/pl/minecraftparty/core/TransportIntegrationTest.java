@@ -64,7 +64,8 @@ class TransportIntegrationTest {
                     UUID world = UUID.randomUUID(); byte[] login = MinecraftAdmissionTest.login(guestId, "Guest");
                     byte[] payload = new byte[131072]; new Random(42 + i).nextBytes(payload);
                     CompletableFuture<Void> received = new CompletableFuture<>();
-                    Thread.ofVirtual().name("party-test-backend").start(() -> {
+                    // Minecraft's Netty backend runs on platform event-loop threads.
+                    Thread.ofPlatform().daemon().name("party-test-backend").start(() -> {
                         try (Socket socket = backend.accept()) {
                             socket.setSoTimeout(10000);
                             assertArrayEquals(login, socket.getInputStream().readNBytes(login.length));
