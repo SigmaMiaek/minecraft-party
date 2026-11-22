@@ -27,10 +27,17 @@ public final class GuestNode implements AutoCloseable {
     private final Thread worker;
     private final ConnectionTrace trace = new ConnectionTrace();
     private volatile int connectedCandidate;
+    private final Consumer<LeadershipPacket> leadershipListener;
 
     public GuestNode(Invite invite, UUID id, String name, Consumer<LobbyState> onState, Consumer<String> onConnection)
             throws GeneralSecurityException {
+        this(invite, id, name, "", onState, onConnection, packet -> {});
+    }
+    public GuestNode(Invite invite, UUID id, String name, String resume, Consumer<LobbyState> onState,
+                     Consumer<String> onConnection, Consumer<LeadershipPacket> leadershipListener) throws GeneralSecurityException {
         this.invite = invite; this.id = id; this.name = LobbyModel.validName(name, 16);
+        if (!resume.isEmpty() && !resume.matches("[A-Za-z0-9_-]{43}")) throw new IllegalArgumentException("credential");
+        this.resume = resume; this.leadershipListener = leadershipListener;
         this.onState = onState; this.onConnection = onConnection; this.tls = TlsIdentity.client(invite.fingerprint());
         worker = Thread.ofVirtual().name("party-guest-control").start(this::run);
     }
@@ -39,6 +46,13 @@ public final class GuestNode implements AutoCloseable {
     public String diagnostics() { return trace.report(); }
     public LobbyState snapshot() { return state; }
     public void status(LobbyState.Status value) { status = value; }
+    public String migrationCredential() { return resume; }
+    public void leadership(LeadershipPacket packet) throws IOException {
+        if (!(packet instanceof LeadershipPacket.Ready || packet instanceof LeadershipPacket.Failed)) throw new IOException("direction");
+        DataOutputStream out = controlOut;
+        if (!connected || closed || out == null) throw new IOException("not connected");
+        synchronized (out) { LeadershipPacket.write(out, packet); out.flush(); }
+    }
     /** Worker-thread operation; serialized with heartbeats and graceful leave. */
     public void chat(String text) throws IOException {
         String clean = LobbyModel.validName(text, LobbyModel.MAX_CHAT_LENGTH).strip();
@@ -62,7 +76,21 @@ public final class GuestNode implements AutoCloseable {
                 Thread heartbeat = Thread.ofVirtual().name("party-guest-heartbeat").start(() -> heartbeat(socket, out));
                 try {
                     while (!closed) {
-                        if (in.readUnsignedByte() != Wire.SNAPSHOT) throw new IOException("message");
+                        int kind = in.readUnsignedByte();
+                        if (kind >= 20 && kind <= 26) {
+                            if (kind != 20 && kind != 22 && kind != 23 && kind != 26) throw new IOException("leadership direction");
+                            LeadershipPacket packet = LeadershipPacket.read(kind, in);
+                            if (!(packet instanceof LeadershipPacket.Prepare || packet instanceof LeadershipPacket.Commit
+                                    || packet instanceof LeadershipPacket.Abort || packet instanceof LeadershipPacket.Starting)) throw new IOException("direction");
+                            if (packet instanceof LeadershipPacket.Prepare prepare && (!prepare.plan().successor().equals(id)
+                                    || !prepare.plan().snapshot().partyId().equals(invite.partyId()))) throw new IOException("successor");
+                            if (packet instanceof LeadershipPacket.Commit commit) {
+                                if (!commit.invite().partyId().equals(invite.partyId())) throw new IOException("migration party");
+                                synchronized (out) { LeadershipPacket.write(out, new LeadershipPacket.Ack(packet.transaction())); out.flush(); }
+                            }
+                            leadershipListener.accept(packet); continue;
+                        }
+                        if (kind != Wire.SNAPSHOT) throw new IOException("message");
                         LobbyState next = Wire.snapshot(in);
                         if (!invite.partyId().equals(next.partyId()) || next.members().stream().noneMatch(m -> m.id().equals(id))
                                 || state != null && next.revision() < state.revision()) throw new IOException("state");

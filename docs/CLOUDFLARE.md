@@ -18,20 +18,19 @@
 
 Jeżeli ekran panelu ma inne nazwy, użyj [oficjalnej instrukcji importu repozytorium](https://developers.cloudflare.com/workers/get-started/dashboard/) oraz [konfiguracji katalogu i poleceń](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/). Projekt jest Workerem, a nie stroną Pages.
 
-## Oba komputery — od 0.6.1
+## Oba komputery — od 0.7.0
 
-1. Zainstaluj **Minecraft Party 0.6.1+26.2**, usuń wcześniejszy JAR i uruchom grę ponownie. Wymagania Minecraft/Fabric/Java pozostają takie jak w 0.5.2.
-2. Adres wdrożonej usługi jest ustawiany automatycznie. Nie ma pola URL w interfejsie. Starsze konfiguracje z pustym adresem otrzymują domyślny adres; własne poprawne adresy administratora zapisane wcześniej pozostają zachowane.
-3. Host: **Utwórz Party**. Mod korzysta z e4mc i publikuje kod w katalogu. Po przygotowaniu kodu **Kopiuj kod** kopiuje tylko sześć cyfr. Przed gotowością przycisk jest nieaktywny.
-4. Znajomy wpisuje sześć cyfr w osobnych polach **XXX − XXX** i klika **Dołącz Party** pod nimi. Można wkleić cały kod (także 123-456); działa automatyczne przejście, strzałki i Backspace. Długie zaproszenia mp2/mp3 nie są przyjmowane przez ekran ani publiczną metodę dołączania.
-5. Znajomy dostanie **numer swojej prośby**. Host otwiera **Kody Party…**, porównuje ten numer ze znajomym przez zaufany komunikator lub rozmowę i klika **Przyjmij** przy właściwej prośbie. Sam nick nie potwierdza tożsamości.
-6. Po zatwierdzeniu mod otrzymuje wewnętrzne dane połączenia i uruchamia istniejące TLS oraz połączenie lobby. Host wybiera świat lub serwer przez zwykłe menu Minecrafta.
+1. Wszyscy instalują **Minecraft Party 0.7.0+26.2** i uruchamiają grę ponownie. Adres wdrożonej usługi jest automatyczny, również w starych pustych konfiguracjach.
+2. Repozytorium Cloudflare musi mieć aktualny Worker z `main`. Integracja Git powinna wdrożyć zmianę automatycznie; w razie potrzeby ponów najnowszy build. `/health` zawiera teraz `"autoJoin":true`. Nie trzeba zmieniać bazy ani adresu.
+3. Host tworzy Party. W panelu kod jest ukryty domyślnie; oczko go ujawnia, a sąsiednia ikona kopiowania działa też przy ukrytym kodzie. Po zmianie kodu ponownie zostaje ukryty.
+4. Znajomy wpisuje 6 cyfr w polach **XXX − XXX**, klika **Dołącz Party** i bez zatwierdzania otrzymuje wewnętrzne zaproszenie do TLS. Działa też wklejanie 123-456. Kod jest teraz samodzielnym uprawnieniem: każdy, kto go zna lub zgadnie, może wejść. Nie ma dodatkowego sprawdzania tożsamości w oknie akceptacji. W świecie nadal obowiązuje logowanie Minecrafta.
+5. Lider wybiera świat lub serwer. Gwiazdka obok uczestnika w lobby przekazuje mu lidera; przycisk Opuść Party próbuje przekazać rolę następnej połączonej osobie. [Migracja](LEADERSHIP.md).
 
-Konto Cloudflare zakłada tylko administrator usługi; znajomi go nie potrzebują. Długie dane zaproszenia pozostają wewnątrz protokołu: zawierają odcisk certyfikatu i sekret wymagany przez istniejący transport. Nie są już pokazywane, wklejane ani kopiowane w UI. Usunięcie danych kryptograficznych z protokołu nie jest potrzebne do sześciocyfrowego interfejsu.
+Pełne mp2/mp3 pozostają wewnętrznym formatem danych i nie mają pola wklejania ani kopiowania w UI. Nie wyłączono TLS ani weryfikacji odcisku certyfikatu.
 
 ## Koszt, zaufanie i ograniczenia
 
-- To opcjonalny backend katalogu i zatwierdzania zaproszeń. Ruch gry pozostaje w e4mc; usługa nie jest relayem Minecrafta ani integracją zapraszania przez znajomych Mojang.
+- To backend katalogu zaproszeń; nowe pokoje nie wymagają zatwierdzania. Ruch gry pozostaje w e4mc; usługa nie jest relayem Minecrafta ani integracją zapraszania przez znajomych Mojang.
 - Workers Free i SQLite Durable Objects mają darmowe limity. Po ich przekroczeniu operacje mogą przestać działać. Wystarczalność dla większej liczby graczy wymaga pomiarów. [Limity i koszt](https://developers.cloudflare.com/durable-objects/platform/pricing/).
 - Administrator usługi i Cloudflare mogą odczytać prywatne zaproszenia, w tym odcisk certyfikatu i sekret dostępu. Ustawiaj wyłącznie adres własnej lub zaufanej usługi. To inny model zaufania niż bezpośrednie przekazanie mp3 poza serwisem.
 - Limit prototypu: 256 aktywnych Party, 12 krótkotrwałych próśb na Party, 600 operacji na minutę łącznie i dodatkowe limity na IP i rodzaj operacji. Nie jest to usługa przygotowana na masowe publiczne wdrożenie lub rozproszony atak.
@@ -41,9 +40,9 @@ Konto Cloudflare zakłada tylko administrator usługi; znajomi go nie potrzebuj�
 
 ## Weryfikacja
 
-Lokalnie: kompilacja wszystkich źródeł Java i 68 testów bez gniazd przez narzędzie awaryjne; 13 scenariuszy polityki katalogu wykonanych w V8. Gradle lokalnie blokuje ograniczenie dostępu do interfejsów sieciowych. Workflow GitHub dodatkowo buduje i testuje mod na Windows/Linux, testuje Worker z rzeczywistym lokalnym runtime Wrangler i SQLite oraz sprawdza pakowanie `--dry-run`. Wynik konkretnego przebiegu należy sprawdzić w Actions.
+Lokalnie w 0.7.0: kompilacja źródeł Java i 84 testy bez gniazd przez narzędzie awaryjne; 14 scenariuszy polityki katalogu wykonanych w V8. Migracja TLS ma dodatkowy test sieciowy w CI. Gradle lokalnie blokuje ograniczenie dostępu do interfejsów sieciowych. Workflow GitHub dodatkowo buduje i testuje mod na Windows/Linux, testuje Worker z rzeczywistym lokalnym runtime Wrangler i SQLite oraz sprawdza pakowanie `--dry-run`. Wynik konkretnego przebiegu należy sprawdzić w Actions.
 
-Nie wykonano tu wdrożenia na konto użytkownika ani testu nowej ścieżki kodów w dwóch uruchomionych klientach Minecraft. `/health` potwierdza wyłącznie dostępność aplikacji; testem funkcji jest utworzenie kodu, zatwierdzenie prośby, lobby i wejście do świata na dwóch komputerach.
+Nie wykonano tu wdrożenia na konto użytkownika ani testu nowej ścieżki kodów w dwóch uruchomionych klientach Minecraft. `/health` potwierdza wyłącznie dostępność aplikacji; testem nowej funkcji jest utworzenie kodu, dołączenie bez zatwierdzania, lobby, przejęcie lidera i wejście do świata na dwóch komputerach.
 
 ## Wdrożenie użytkownika — 22 listopada 2026
 

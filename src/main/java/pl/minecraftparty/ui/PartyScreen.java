@@ -24,6 +24,9 @@ public final class PartyScreen extends Screen {
     private PartyChat chat;
     private Button create, join, copy, retry, follow, teleport;
     private Button codes;
+    private PartyCodeIconButton eye;
+    private final PartyCodePresentation codePresentation = new PartyCodePresentation();
+    private final Map<UUID, Button> leadershipButtons = new HashMap<>();
     private final Map<UUID, Button> operatorButtons = new HashMap<>();
 
     public PartyScreen(Screen parent) {
@@ -38,6 +41,7 @@ public final class PartyScreen extends Screen {
         top = 48; bottom = height - 58; wide = width >= 520 && height >= 300;
         create = join = copy = retry = follow = teleport = null; name = null; chat = null; operatorButtons.clear();
         codes = null;
+        eye = null; leadershipButtons.clear();
         button("back", width - 76, 7, 68, this::onClose);
         button("diagnostics.open", 8, 7, 84, () -> minecraft.gui.setScreen(new NetworkDiagnosticsScreen(this)));
         if (!manager.active()) initCreate();
@@ -51,7 +55,7 @@ public final class PartyScreen extends Screen {
                     button.active = tab != i;
                 }
             }
-            playersWidth = wide ? Math.max(140, contentWidth * 26 / 100) : contentWidth;
+            playersWidth = wide ? Math.max(176, contentWidth * 28 / 100) : contentWidth;
             settingsWidth = wide ? Math.max(142, contentWidth * 25 / 100) : contentWidth;
             settingsX = wide ? left + contentWidth - settingsWidth : left;
             chatX = wide ? left + playersWidth + 6 : left;
@@ -93,6 +97,12 @@ public final class PartyScreen extends Screen {
                 Button kick = addRenderableWidget(Button.builder(Component.literal("×"), b -> manager.kick(member.id()))
                         .bounds(left + playersWidth - 25, top + 27 + i * 26, 18, 18).build());
                 kick.setTooltip(Tooltip.create(tr("kick_hint", member.name())));
+                if (state.worldId() == null) {
+                    Button leader = addRenderableWidget(Button.builder(Component.literal("★"), b -> manager.leadership.transfer(member.id()))
+                            .bounds(left + playersWidth - 49, top + 27 + i * 26, 20, 18).build());
+                    leader.setTooltip(Tooltip.create(tr("leader.transfer_hint", member.name())));
+                    leadershipButtons.put(member.id(), leader);
+                }
                 if (manager.permissions.available()) {
                     Button op = addRenderableWidget(Button.builder(Component.literal("OP"), b -> manager.toggleOperator(member.id()))
                             .bounds(left + playersWidth - 55, top + 27 + i * 26, 26, 18).build());
@@ -109,19 +119,20 @@ public final class PartyScreen extends Screen {
     private void initSettings() {
         int x = settingsX + 7, w = settingsWidth - 14;
         if (manager.host() != null) {
-            if (height >= 290) codes = button("codes.open", x, bottom - 73, w, () -> minecraft.gui.setScreen(new PartyCodesScreen(this)));
             if (wide) {
-                copy = button("copy", x, top + 27, w, this::copyInvite);
+                eye = addRenderableWidget(new PartyCodeIconButton(x + w - 47, top + 27, 20, false, codePresentation::visible, codePresentation::toggle));
+                copy = addRenderableWidget(new PartyCodeIconButton(x + w - 22, top + 27, 20, true, codePresentation::visible, this::copyInvite));
                 button("rotate", x, top + 51, w, manager::rotateInvite);
                 follow = button("follow", x, top + 75, w, manager::toggleMultiplayerSharing);
                 teleport = button("teleport", x, top + 99, w, manager::toggleTeleport);
                 retry = button("resume", x, bottom - 49, w, () -> minecraft.gui.setScreen(null));
             } else {
+                eye = addRenderableWidget(new PartyCodeIconButton(x + w - 47, top + 19, 20, false, codePresentation::visible, codePresentation::toggle));
+                copy = addRenderableWidget(new PartyCodeIconButton(x + w - 22, top + 19, 20, true, codePresentation::visible, this::copyInvite));
                 int half = (w - 4) / 2;
-                copy = button("copy", x, top + 16, half, this::copyInvite);
-                button("rotate", x + half + 4, top + 16, half, manager::rotateInvite);
-                follow = button("follow", x, top + 40, w, manager::toggleMultiplayerSharing);
-                teleport = button("teleport", x, top + 64, w, manager::toggleTeleport);
+                button("rotate", x, top + 42, half, manager::rotateInvite);
+                follow = button("follow", x + half + 4, top + 42, half, manager::toggleMultiplayerSharing);
+                teleport = button("teleport", x, top + 65, w, manager::toggleTeleport);
             }
         } else {
             retry = button("retry", x, bottom - 49, w, manager::retryWorld);
@@ -136,14 +147,19 @@ public final class PartyScreen extends Screen {
     private String layoutKey() {
         var state = manager.state();
         return manager.active() + ":" + (manager.host() != null) + ":" + manager.permissions.available() + ":" +
+                (state == null || state.worldId() == null) + ":" +
                 (state == null ? "" : state.members().stream().map(m -> m.id().toString()).toList());
     }
     @Override public void tick() { if (!layoutKey.equals(layoutKey())) rebuildWidgets(); updateButtons(); }
     private void updateButtons() {
         if (create != null) create.active = !manager.busy() && !draftName.isBlank();
         if (join != null) join.active = !manager.busy() && draftDigits.complete();
-        if (codes != null && manager.host() != null) codes.setMessage(tr("codes.manage", manager.codes.code().isEmpty() ? "—" : manager.codes.code(), manager.codes.pending().size()));
-        if (copy != null) copy.active = ShortCodeClient.isCode(manager.codes.code());
+        codePresentation.sync(manager.codes.code());
+        if (codes != null && manager.host() != null) codes.setMessage(tr("codes.open"));
+        if (copy != null) copy.active = ShortCodeClient.isCode(manager.codes.code()) && !manager.leadership.busy();
+        if (eye != null) { eye.active = ShortCodeClient.isCode(manager.codes.code()); eye.refreshLabel(); }
+        leadershipButtons.forEach((id, button) -> button.active = !manager.leadership.busy() && manager.state() != null
+                && manager.state().members().stream().anyMatch(m -> m.id().equals(id) && m.status() == LobbyState.Status.LOBBY));
         if (follow != null) follow.setMessage(tr("follow", Component.translatable(manager.config.shareMultiplayer ? "options.on" : "options.off")));
         if (teleport != null) {
             teleport.setMessage(tr("teleport", Component.translatable(manager.config.allowPartyTeleport ? "options.on" : "options.off")));
@@ -186,7 +202,7 @@ public final class PartyScreen extends Screen {
             int index = page * rows() + i; if (index >= state.members().size()) break;
             var member = state.members().get(index);
             member(graphics, font, member, left + 7, top + 28 + i * 26,
-                    playersWidth - (operatorButtons.containsKey(member.id()) ? 68 : manager.host() != null && !member.host() ? 38 : 14), true);
+                    playersWidth - (operatorButtons.containsKey(member.id()) || leadershipButtons.containsKey(member.id()) ? 68 : manager.host() != null && !member.host() ? 38 : 14), true);
         }
         if (state != null && state.members().size() > rows())
             text(graphics, font, Component.literal((page + 1) + " / " + ((state.members().size() - 1) / rows() + 1)), left + 52, bottom - 18, 0xFFAAAAAA, playersWidth - 104);
@@ -194,6 +210,8 @@ public final class PartyScreen extends Screen {
     private void drawSettings(GuiGraphicsExtractor graphics, LobbyState state) {
         panel(graphics, settingsX, top, settingsWidth, bottom - top);
         text(graphics, font, tr(manager.host() != null ? "settings.host" : "settings.party"), settingsX + 7, top + 7, 0xFFFFFFFF, settingsWidth - 14);
+        if (manager.host() != null) text(graphics, font, Component.literal(codePresentation.display()), settingsX + 7,
+                top + (wide ? 33 : 25), 0xFFFFFFAA, settingsWidth - 64);
         if (manager.host() == null) {
             text(graphics, font, tr("guest"), settingsX + 7, top + 28, 0xFFAAAAAA, settingsWidth - 14);
             text(graphics, font, tr(state == null || state.worldId() == null ? "destination.lobby" : state.multiplayerTarget() == null

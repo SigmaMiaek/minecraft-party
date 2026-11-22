@@ -1,8 +1,8 @@
-# Minecraft Party — prototyp 0.6.1
+# Minecraft Party — prototyp 0.7.0
 
-**Pobierz prototyp:** [JAR 0.6.1 z sześcioma polami kodu](https://github.com/SigmaMiaek/minecraft-party/raw/refs/heads/main/downloads/minecraft-party-0.6.1%2B26.2.jar) · [stan testów i SHA-256](downloads/README.md) · [wydania budowane przez GitHub Actions](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.6.1 pojawia się po zaliczeniu kompilacji/testów Windows i Linux oraz testów katalogu kodów. Starszy lokalny artefakt 0.5.2 pozostaje w `downloads`.
+**Pobierz:** [wydania Minecraft Party](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.7.0 jest publikowane po udanej kompilacji i testach Windows/Linux oraz katalogu kodów. [Starsze lokalne prototypy](downloads/README.md) pozostają dostępne.
 
-**Nowe w 0.6.1:** sześć małych pól na cyfry (XXX − XXX), osobny przycisk dołączania poniżej i pełna obsługa wklejania/klawiatury. Adres wdrożonej usługi Cloudflare jest ustawiany automatycznie, również w starych pustych konfiguracjach. Nie ma pola URL, ręcznego mp2/mp3 ani przycisków kopiowania długich zaproszeń. Tworzenie Party korzysta z e4mc. Dane TLS i sekret zaproszenia są nadal wymieniane wewnętrznie po zatwierdzeniu prośby przez hosta. [Instrukcja i zaufanie do usługi kodów](docs/CLOUDFLARE.md).
+**Nowe w 0.7.0:** gwiazdka obok gracza przekazuje mu lidera w lobby. Opuść Party przygotowuje kolejnego połączonego uczestnika i przenosi do niego pozostałych, zanim stary lider zamknie połączenie. [Działanie i ograniczenia migracji](docs/LEADERSHIP.md). Kod jest domyślnie ukryty, z oczkiem i ikoną kopiowania obok; poprawny kod dołącza bez akceptacji. Adres Cloudflare nadal ustawia się automatycznie. Każdy posiadacz kodu może wejść do Party. Wszyscy muszą zaktualizować mod i trzeba wdrożyć aktualny Worker.
 
 Niezależny mod kliencki Fabric z lobby istniejącym poza światem i szyfrowanym tunelem do zintegrowanego serwera. Projekt nie zawiera kodu, API ani zależności Essential Mod.
 
@@ -11,10 +11,10 @@ Niezależny mod kliencki Fabric z lobby istniejącym poza światem i szyfrowanym
 ## Instalacja prototypu
 
 1. Obaj gracze instalują Minecraft Java **26.2**, Fabric Loader **0.19.3 lub nowszy zgodny z 26.2**, Fabric API **0.161.0+26.2** i Java **25**.
-2. Skopiuj `build/libs/minecraft-party-0.6.1+26.2.jar` do katalogu `mods` każdej instancji. Usuń poprzedni JAR Party i uruchom ponownie Minecrafta. Instalowanie moda e4mc nie jest wymagane.
+2. Skopiuj `build/libs/minecraft-party-0.7.0+26.2.jar` do katalogu `mods` każdej instancji. Usuń poprzedni JAR Party i uruchom ponownie Minecrafta. Instalowanie moda e4mc nie jest wymagane.
 3. Użyj dwóch różnych, prawidłowo zalogowanych kont Minecraft. Ten prototyp zachowuje logowanie vanilla; uruchomienie developerskie bez sesji Microsoft nie sprawdza prawdziwego dołączania do świata.
 4. Host tworzy Party. Mod automatycznie korzysta z e4mc i domyślnej usługi kodów. Przy pierwszej próbie pobiera zweryfikowaną bibliotekę natywną; potrzebne są HTTPS i wychodzące UDP.
-5. Znajomy wpisuje sześć cyfr, a host porównuje numer prośby i ją zatwierdza. Szczegóły: [Kody i zatwierdzanie](docs/CLOUDFLARE.md).
+5. Znajomy wpisuje sześć cyfr i od razu rozpoczyna połączenie. Szczegóły: [Kody Party](docs/CLOUDFLARE.md).
 
 Docelowy przepływ zaimplementowany w kodzie:
 

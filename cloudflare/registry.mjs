@@ -33,9 +33,9 @@ export class Registry {
       }
       if (!code) fail(503);
       const room = { owner: this.random.token(), invite: body.invite, hardExpiry: body.expiresAt,
-        expiresAt: Math.min(body.expiresAt, now + 120000), requests: [] };
+        autoJoin: body.autoJoin === true, expiresAt: Math.min(body.expiresAt, now + 120000), requests: [] };
       this.save(code, room);
-      return { code, owner: room.owner, expiresAt: room.expiresAt };
+      return { code, owner: room.owner, expiresAt: room.expiresAt, autoJoin: room.autoJoin };
     }
     if (typeof body.code !== 'string' || !/^\d{6}$/.test(body.code)) fail(400);
     const room = this.store.get('room:' + body.code);
@@ -61,7 +61,7 @@ export class Registry {
       if (typeof body.name !== 'string' || !/^[A-Za-z0-9_]{1,16}$/.test(body.name)) fail(400);
       if (room.requests.length >= 12) fail(429);
       request = { id: this.random.token(), tokenHash: body.tokenHash, name: body.name,
-        check: this.random.code(), status: 'pending', expiresAt: Math.min(room.expiresAt, now + 90000) };
+        check: this.random.code(), status: room.autoJoin ? 'approved' : 'pending', expiresAt: Math.min(room.expiresAt, now + 90000) };
       room.requests.push(request); this.save(body.code, room);
     }
     if (!request) fail(404);

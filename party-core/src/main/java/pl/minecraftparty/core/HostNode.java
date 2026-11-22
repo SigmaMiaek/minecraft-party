@@ -26,6 +26,11 @@ public final class HostNode implements AutoCloseable {
     private InetSocketAddress worldTarget;
     private UUID worldId;
     private boolean multiplayer;
+    public record LeadershipEvent(UUID sender, LeadershipPacket packet) { }
+    private volatile Consumer<LeadershipEvent> leadershipListener = event -> {};
+    private LeadershipPlan leadershipPlan;
+    private final Set<UUID> leadershipAcks = new HashSet<>();
+    private CompletableFuture<Void> leadershipDelivered;
     private final AtomicLong tcpAccepted = new AtomicLong(), tlsAccepted = new AtomicLong(), tlsFailed = new AtomicLong(),
             lobbyAccepted = new AtomicLong(), lobbyRejected = new AtomicLong(), protocolRejected = new AtomicLong();
     public record ConnectionStats(int localPort, long tcpAccepted, long tlsAccepted, long tlsFailed,
@@ -42,8 +47,16 @@ public final class HostNode implements AutoCloseable {
     /** Explicit bind and advertised candidates also allow isolated integration tests. */
     public HostNode(UUID hostId, String hostName, String name, int limit, List<String> candidates,
                     InetAddress bind, Consumer<LobbyState> onState) throws GeneralSecurityException, IOException {
+        this(new LobbyModel(hostId, hostName, name, limit), hostId, candidates, bind, onState);
+    }
+    public static HostNode successor(LeadershipPlan plan, List<String> candidates, InetAddress bind, Consumer<LobbyState> onState)
+            throws GeneralSecurityException, IOException {
+        return new HostNode(LobbyModel.restore(plan), plan.successor(), candidates, bind, onState);
+    }
+    private HostNode(LobbyModel model, UUID hostId, List<String> candidates, InetAddress bind, Consumer<LobbyState> onState)
+            throws GeneralSecurityException, IOException {
         if (candidates.isEmpty()) throw new IOException("no network interface");
-        this.hostId = hostId; this.model = new LobbyModel(hostId, hostName, name, limit);
+        this.hostId = hostId; this.model = model;
         this.identity = TlsIdentity.create(); this.candidates = List.copyOf(candidates); this.onState = onState;
         // Validate everything before opening the socket.
         new Invite(model.snapshot().partyId(), candidates, 1, identity.fingerprint(), model.inviteSecret(), model.inviteExpires());
@@ -58,6 +71,37 @@ public final class HostNode implements AutoCloseable {
         publish();
     }
     public LobbyState snapshot() { return model.snapshot(); }
+    public void leadershipListener(Consumer<LeadershipEvent> listener) { leadershipListener = Objects.requireNonNull(listener); }
+    public synchronized LeadershipPlan planLeadership(UUID target, boolean leaving) {
+        if (closed || leadershipPlan != null || !controls.containsKey(target) || worldId != null)
+            throw new IllegalStateException("leadership unavailable");
+        Map<UUID, String> credentials = new HashMap<>(model.migrationCredentials()); credentials.remove(target);
+        if (!leaving) credentials.put(hostId, Secrets.token());
+        return new LeadershipPlan(UUID.randomUUID(), target, leaving, model.snapshot(), credentials, model.migrationBans());
+    }
+    public synchronized void beginLeadership(LeadershipPlan plan) throws IOException {
+        if (closed || leadershipPlan != null || !hostId.equals(plan.previousLeader())
+                || !model.snapshot().partyId().equals(plan.snapshot().partyId()) || !controls.containsKey(plan.successor()) || worldId != null)
+            throw new IOException("leadership unavailable");
+        leadershipPlan = plan;
+        for (Control control : controls.values()) control.send(control.id.equals(plan.successor())
+                ? new LeadershipPacket.Prepare(plan) : new LeadershipPacket.Starting(plan.transaction()));
+    }
+    public synchronized void abortLeadership(UUID transaction) {
+        if (leadershipPlan == null || !leadershipPlan.transaction().equals(transaction)) return;
+        for (Control control : controls.values()) control.send(new LeadershipPacket.Abort(transaction));
+        leadershipPlan = null; leadershipAcks.clear();
+        if (leadershipDelivered != null) leadershipDelivered.completeExceptionally(new IOException("aborted"));
+        leadershipDelivered = null;
+    }
+    public synchronized CompletableFuture<Void> commitLeadership(UUID transaction, Invite invitation) throws IOException {
+        if (leadershipPlan == null || !leadershipPlan.transaction().equals(transaction)
+                || !controls.containsKey(leadershipPlan.successor()) || !model.snapshot().partyId().equals(invitation.partyId())) throw new IOException("leadership transaction");
+        leadershipAcks.clear(); leadershipAcks.addAll(controls.keySet()); leadershipDelivered = new CompletableFuture<>();
+        for (Control control : controls.values()) control.send(new LeadershipPacket.Commit(transaction, leadershipPlan.successor(), invitation));
+        if (leadershipAcks.isEmpty()) leadershipDelivered.complete(null);
+        return leadershipDelivered;
+    }
     public Invite invite() {
         return new Invite(model.snapshot().partyId(), candidates, listener.getLocalPort(), identity.fingerprint(), model.inviteSecret(), model.inviteExpires());
     }
@@ -77,6 +121,7 @@ public final class HostNode implements AutoCloseable {
         model.multiplayer(session, target); publish();
     }
     public synchronized boolean chat(String text) {
+        if (leadershipPlan != null) return false;
         boolean accepted = model.chat(hostId, text); if (accepted) publish(); return accepted;
     }
     public synchronized void closeWorld() {
@@ -125,7 +170,7 @@ public final class HostNode implements AutoCloseable {
         String name = Wire.text(in, 16), secret = Wire.text(in, 43), resume = Wire.text(in, 43);
         Control control;
         synchronized (this) {
-            if (closed || controls.containsKey(id)) { lobbyRejected.incrementAndGet(); out.writeByte(Wire.ERROR); out.writeUTF("rejected"); out.flush(); return; }
+            if (closed || controls.containsKey(id) || leadershipPlan != null && !model.authenticate(id, resume)) { lobbyRejected.incrementAndGet(); out.writeByte(Wire.ERROR); out.writeUTF("rejected"); out.flush(); return; }
             String credential;
             try { credential = model.join(id, name, secret, resume); }
             catch (SecurityException | IllegalArgumentException e) { lobbyRejected.incrementAndGet(); out.writeByte(Wire.ERROR); out.writeUTF("rejected"); out.flush(); return; }
@@ -157,7 +202,25 @@ public final class HostNode implements AutoCloseable {
                     }
                 } else if (command == Wire.CHAT) {
                     String text = Wire.text(in, LobbyModel.MAX_CHAT_LENGTH);
-                    synchronized (this) { if (model.chat(id, text)) publish(); }
+                    synchronized (this) { if (leadershipPlan == null && model.chat(id, text)) publish(); }
+                } else if (command >= 20 && command <= 26) {
+                    if (command != 21 && command != 24 && command != 25) throw new IOException("leadership direction");
+                    LeadershipPacket packet = LeadershipPacket.read(command, in);
+                    synchronized (this) {
+                        if (leadershipPlan == null || !leadershipPlan.transaction().equals(packet.transaction())) {
+                            if (packet instanceof LeadershipPacket.Ready || packet instanceof LeadershipPacket.Failed || packet instanceof LeadershipPacket.Ack) continue;
+                            throw new IOException("leadership transaction");
+                        }
+                        if (!(packet instanceof LeadershipPacket.Ack) && !id.equals(leadershipPlan.successor()))
+                            throw new IOException("leadership authority");
+                        if (packet instanceof LeadershipPacket.Ack) {
+                            leadershipAcks.remove(id);
+                            if (leadershipDelivered != null && leadershipAcks.isEmpty()) leadershipDelivered.complete(null);
+                        } else if (packet instanceof LeadershipPacket.Ready ready) {
+                            if (!model.snapshot().partyId().equals(ready.invite().partyId())) throw new IOException("leadership party");
+                        } else if (!(packet instanceof LeadershipPacket.Failed)) throw new IOException("leadership direction");
+                    }
+                    if (!(packet instanceof LeadershipPacket.Ack)) leadershipListener.accept(new LeadershipEvent(id, packet));
                 } else if (command != Wire.PING) throw new IOException("command");
                 // A periodic snapshot is also a server heartbeat, independent of state revisions.
                 control.offer(model.snapshot());
@@ -209,19 +272,23 @@ public final class HostNode implements AutoCloseable {
         final String name;
         final SSLSocket socket;
         final DataOutputStream out;
-        final ArrayBlockingQueue<LobbyState> updates = new ArrayBlockingQueue<>(1);
+        record Outbound(LobbyState snapshot, LeadershipPacket signal) { }
+        final ArrayBlockingQueue<Outbound> updates = new ArrayBlockingQueue<>(16);
         volatile boolean closed;
         Socket tunnel, backend;
         Thread writer;
         String credential;
         Control(UUID id, String name, SSLSocket socket, DataOutputStream out) { this.id = id; this.name = name; this.socket = socket; this.out = out; }
-        void offer(LobbyState state) { if (!updates.offer(state)) { updates.poll(); updates.offer(state); } }
+        void offer(LobbyState state) { updates.removeIf(m -> m.snapshot() != null); updates.offer(new Outbound(state, null)); }
+        void send(LeadershipPacket signal) { if (!updates.offer(new Outbound(null, signal))) Thread.ofVirtual().start(this::close); }
         void writeUpdates() {
             writer = Thread.currentThread();
             try {
                 while (!closed) {
-                    var state = updates.take();
-                    out.writeByte(Wire.SNAPSHOT); Wire.snapshot(out, state); out.flush();
+                    var message = updates.take();
+                    if (message.snapshot() != null) { out.writeByte(Wire.SNAPSHOT); Wire.snapshot(out, message.snapshot()); }
+                    else LeadershipPacket.write(out, message.signal());
+                    out.flush();
                 }
             } catch (IOException e) { SocketPipe.close(socket); }
             catch (InterruptedException e) { Thread.currentThread().interrupt(); }

@@ -50,6 +50,11 @@ with tempfile.TemporaryFile(mode='w+') as log:
         call('poll', {**guest, 'requestToken': secrets.token_urlsafe(32)}, 404)
         call('remove', owner)
         call('poll', guest, 404)
+        auto = call('create', {'invite': invite, 'expiresAt': int(time.time() * 1000) + 300000, 'autoJoin': True})
+        assert auto['autoJoin'] is True
+        immediate = call('request', {'code': auto['code'], 'name': 'DirectJoin', 'requestToken': secrets.token_urlsafe(32)})
+        assert immediate['status'] == 'approved' and immediate['invite'] == invite
+        call('remove', {'code': auto['code'], 'owner': auto['owner']})
         print('Real Worker + SQLite Durable Object: health, approval, capability isolation and revocation passed.')
     except Exception:
         # Avoid logging request bodies/capabilities, including from Wrangler request logs.

@@ -4,7 +4,7 @@ export function runChecks() {
   const passed = [];
   function assert(value, message) { if (!value) throw new Error(message); }
   function test(name, action) { action(); passed.push(name); }
-  function fixture() {
+  function fixture(autoJoin = false) {
     let now = 1000000, next = 1; const data = new Map();
     const store = {
       get: key => data.has(key) ? structuredClone(data.get(key).value) : undefined,
@@ -16,7 +16,7 @@ export function runChecks() {
     const random = { token: () => String(next++).padStart(43, 'x'), code: () => String(next++).padStart(6, '0') };
     const registry = new Registry(store, random, () => now);
     const call = (action, body, ip = 'test') => registry.handle(action, body, ip);
-    const room = call('create', { invite: 'mp3:' + 'A'.repeat(100), expiresAt: now + 3600000 });
+    const room = call('create', { invite: 'mp3:' + 'A'.repeat(100), expiresAt: now + 3600000, autoJoin });
     const owner = { code: room.code, owner: room.owner };
     const guest = { code: room.code, name: 'Friend', tokenHash: 'a'.repeat(64) };
     return { call, room, owner, guest, random, store, advance: n => now += n };
@@ -26,8 +26,14 @@ export function runChecks() {
     throw new Error('Unauthorized operation succeeded');
   }
   test('six digits preserve leading zeroes', () => { const f = fixture(); assert(/^0\d{5}$/.test(f.room.code), 'code'); });
+  test('explicit auto-join returns the invite without a host decision', () => {
+    const f = fixture(true), request = f.call('request', f.guest);
+    assert(f.room.autoJoin === true && request.status === 'approved' && request.invite.startsWith('mp3:'), 'auto join unavailable');
+    assert(!('owner' in request) && f.call('host', f.owner).pending.length === 0, 'owner leaked or approval required');
+    f.call('remove', f.owner); rejected(() => f.call('poll', f.guest), 404);
+  });
   test('guessing a code does not release the invite', () => {
-    const f = fixture(), r = f.call('request', f.guest);
+    const f = fixture(), r = f.call('request', { ...f.guest, autoJoin: true, allow: true });
     assert(r.status === 'pending' && !('invite' in r) && !('owner' in r), 'leaked invite');
     const poll = f.call('poll', f.guest); assert(!('invite' in poll), 'leaked on poll');
   });

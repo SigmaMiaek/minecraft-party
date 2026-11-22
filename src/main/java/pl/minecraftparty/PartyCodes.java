@@ -74,9 +74,9 @@ public final class PartyCodes {
                     working = false; check = result.check();
                     if (result.status().equals("denied")) { reject("codes_denied"); return; }
                     if (result.status().equals("approved")) {
-                        var callback = approved; guestCode = guestToken = ""; approved = failed = null;
+                        var callback = approved; guestCode = guestToken = check = ""; approved = failed = null;
                         callback.accept(result.invite());
-                    } else manager.message("codes_waiting");
+                    } else reject("codes_update_required");
                 });
             } catch (Exception e) {
                 client.execute(() -> { if (epoch == operation) reject(e instanceof ShortCodeClient.Failure f ? f.key() : "codes_unavailable"); });

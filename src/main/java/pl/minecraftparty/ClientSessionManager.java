@@ -87,6 +87,7 @@ public final class ClientSessionManager {
         }
     }
     public void retry() { attemptedWorld = null; }
+    boolean partyConnection() { return inPartyConnection || isPartyServer(); }
     private boolean isPartyServer() { return client.getCurrentServer() != null && endpoint.equals(client.getCurrentServer().ip); }
     static boolean canAutoJoinFrom(Class<? extends Screen> type) {
         // Third-party launchers can replace TitleScreen with an unrelated Screen subclass.

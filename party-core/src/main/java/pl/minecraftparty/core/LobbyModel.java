@@ -10,7 +10,7 @@ public final class LobbyModel {
     public static final int MAX_CHAT_MESSAGES = 64;
     public static final int MAX_CHAT_LENGTH = 256;
     private static final long GRACE_MILLIS = Duration.ofMinutes(2).toMillis();
-    private final UUID partyId = UUID.randomUUID();
+    private final UUID partyId;
     private final UUID hostId;
     private final String name;
     private final int limit;
@@ -30,6 +30,10 @@ public final class LobbyModel {
         this(hostId, hostName, name, limit, Clock.systemUTC());
     }
     LobbyModel(UUID hostId, String hostName, String name, int limit, Clock clock) {
+        this(UUID.randomUUID(), hostId, hostName, name, limit, clock);
+    }
+    private LobbyModel(UUID partyId, UUID hostId, String hostName, String name, int limit, Clock clock) {
+        this.partyId = Objects.requireNonNull(partyId);
         if (limit < 2 || limit > MAX_MEMBERS) throw new IllegalArgumentException("limit");
         this.hostId = Objects.requireNonNull(hostId);
         this.name = validName(name, 40);
@@ -38,6 +42,28 @@ public final class LobbyModel {
         entries.put(hostId, new Entry(validName(hostName, 16), "", LobbyState.Status.LOBBY));
         rotateInvite();
     }
+    public static LobbyModel restore(LeadershipPlan plan) {
+        LobbyState state = plan.snapshot();
+        var leader = state.members().stream().filter(m -> m.id().equals(plan.successor())).findFirst().orElseThrow();
+        var model = new LobbyModel(state.partyId(), leader.id(), leader.name(), state.name(), state.limit(), Clock.systemUTC());
+        model.entries.clear();
+        for (var member : state.members()) {
+            if (plan.leaving() && member.host()) continue;
+            boolean host = member.id().equals(leader.id());
+            Entry entry = new Entry(member.name(), host ? "" : plan.credentials().get(member.id()), host ? LobbyState.Status.LOBBY : LobbyState.Status.DISCONNECTED);
+            if (!host) entry.disconnectedAt = model.clock.millis();
+            model.entries.put(member.id(), entry);
+        }
+        model.banned.addAll(plan.banned()); model.chat.addAll(state.chat());
+        model.chatSequence = state.chat().isEmpty() ? 0 : state.chat().getLast().sequence();
+        model.revision = state.revision() + 1;
+        return model;
+    }
+    synchronized Map<UUID, String> migrationCredentials() {
+        Map<UUID, String> result = new HashMap<>(); entries.forEach((id, entry) -> { if (!id.equals(hostId)) result.put(id, entry.resume); });
+        return result;
+    }
+    synchronized Set<UUID> migrationBans() { return Set.copyOf(banned); }
     public synchronized String join(UUID id, String playerName, String invite, String resume) {
         expireDisconnected();
         if (id.equals(hostId) || banned.contains(id)) throw new SecurityException("rejected");

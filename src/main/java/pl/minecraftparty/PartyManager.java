@@ -21,6 +21,7 @@ public final class PartyManager {
     public final PartyConfig config;
     public final PartyWorldPermissions permissions;
     public final PartyCodes codes;
+    public final PartyLeadership leadership;
     private HostNode host;
     private GuestNode guest;
     private LobbyState state;
@@ -28,6 +29,7 @@ public final class PartyManager {
     private String message = "idle";
     private boolean busy;
     private boolean returnPending;
+    private boolean waitForMenuBeforeSharing;
     private int generation;
     private MultiplayerTarget sharedMultiplayer;
     private long lastChatNanos;
@@ -67,6 +69,7 @@ public final class PartyManager {
     public PartyManager(Minecraft client) {
         this.client = client; config = PartyConfig.load(); permissions = new PartyWorldPermissions(this::message);
         codes = new PartyCodes(this, client);
+        leadership = new PartyLeadership(this, client);
         bridge = new IntegratedServerBridge(this); sessions = new ClientSessionManager(this, client);
     }
     public LobbyState state() { return state; }
@@ -74,9 +77,9 @@ public final class PartyManager {
     public GuestNode guest() { return guest; }
     public String invite() { return invite; }
     public String message() { return message; }
-    public boolean busy() { return busy; }
+    public boolean busy() { return busy || leadership.busy(); }
     public boolean active() { return host != null || guest != null || busy; }
-    public boolean canChat() { return host != null || guest != null && guest.connected(); }
+    public boolean canChat() { return !leadership.busy() && (host != null || guest != null && guest.connected()); }
     public boolean chat(String text) {
         String clean = text.strip();
         if (!canChat() || clean.isEmpty() || clean.length() > LobbyModel.MAX_CHAT_LENGTH) return false;
@@ -108,6 +111,7 @@ public final class PartyManager {
     }
     public void create(String name, int limit) {
         if (active()) return;
+        waitForMenuBeforeSharing = false;
         config.networkMode = PartyConfig.NetworkMode.RELAY;
         int operation = ++generation; busy = true; message = "creating";
         diagnosticRole = "HOST"; previousDiagnostics = ""; setupError = "NONE";
@@ -144,6 +148,7 @@ public final class PartyManager {
                     if (generation != operation) { background(() -> { created.close(); if (opened != null) opened.close(); if (openedRelay != null) openedRelay.close(); }); return; }
                     boolean valid = (openedRelay == null || openedRelay.valid()) && (opened == null || opened.valid());
                     host = created; internetExposure = opened; relayExposure = openedRelay; state = created.snapshot(); invite = valid ? code : ""; busy = false;
+                    observeHost(created);
                     message = valid ? relayed ? "hosting_relay" : internet ? "hosting_internet" : "hosting"
                             : relayed ? "relay_lost" : "internet_lost";
                     PartyClient.LOG.info("Party host ready: mode={}, local TCP={}", relayed ? "E4MC_RELAY" : opened == null ? "LAN" : opened.mechanism(),
@@ -169,16 +174,21 @@ public final class PartyManager {
         codes.join(code, username, invitation -> connectInvite(invitation, operation, id, username), key -> failed(operation, key));
     }
     private void connectInvite(String code, int operation, UUID id, String username) {
+        connectInvite(code, operation, id, username, "");
+    }
+    private void connectInvite(String code, int operation, UUID id, String username, String resume) {
         background(() -> {
             try {
                 Invite invitation = Invite.decode(code.strip());
                 client.execute(() -> { if (generation == operation) { targetPort = invitation.port(); candidateCount = invitation.relay() ? 1 : invitation.candidates().size(); } });
-                GuestNode node = new GuestNode(invitation, id, username,
+                var reference = new java.util.concurrent.atomic.AtomicReference<GuestNode>();
+                GuestNode node = new GuestNode(invitation, id, username, resume,
                         next -> client.execute(() -> { if (generation == operation) state = next; }),
                         next -> client.execute(() -> { if (generation == operation) {
                             message = next;
                             if (!next.equals("connected") && !next.equals("reconnecting")) PartyClient.LOG.info("Party connection result: {}", next);
-                        } }));
+                        } }), packet -> client.execute(() -> { if (generation == operation) leadership.receive(reference.get(), packet); }));
+                reference.set(node);
                 client.execute(() -> {
                     if (generation != operation) { background(node::close); return; }
                     guest = node; busy = false;
@@ -190,7 +200,7 @@ public final class PartyManager {
         client.execute(() -> { if (generation == operation) { busy = false; message = text; if (host == null && guest == null) state = null; } });
     }
     public void rotateInvite() {
-        HostNode node = host; if (node == null) return;
+        HostNode node = host; if (node == null || leadership.busy()) return;
         codes.reset();
         invite = "";
         int operation = generation;
@@ -200,7 +210,7 @@ public final class PartyManager {
             client.execute(() -> { if (generation == operation) { invite = code; message = code.isEmpty() ? relay != null ? "relay_lost" : "internet_lost" : "rotated"; } }); });
     }
     public void kick(UUID id) {
-        HostNode node = host; if (node == null) return;
+        HostNode node = host; if (node == null || leadership.busy()) return;
         codes.reset();
         invite = "";
         int operation = generation;
@@ -211,6 +221,12 @@ public final class PartyManager {
             client.execute(() -> { if (generation == operation) invite = code; }); });
     }
     public void leave() {
+        if (leadership.busy()) { message = "leader_busy"; return; }
+        if (host != null && leadership.leave()) return;
+        leaveImmediately();
+    }
+    void leaveImmediately() {
+        leadership.reset();
         codes.reset();
         previousDiagnostics = host != null ? hostDiagnostics() : guest != null ? "Target TCP port: " + targetPort + "\n" + guest.diagnostics() : previousDiagnostics;
         ++generation; cancelCreate.set(true);
@@ -219,6 +235,7 @@ public final class PartyManager {
         E4mcRelay oldRelay = relayExposure; relayExposure = null;
         host = null; guest = null; state = null; invite = ""; busy = false; message = "idle";
         returnPending = false; sharedMultiplayer = null; bridge.detach(); sessions.reset();
+        waitForMenuBeforeSharing = false;
         background(() -> { if (oldHost != null) oldHost.close(); if (oldGuest != null) oldGuest.close(); if (oldExposure != null) oldExposure.close(); if (oldRelay != null) oldRelay.close(); });
     }
     private static String publishedInvite(HostNode node, InternetExposure exposure, E4mcRelay relay) {
@@ -226,8 +243,14 @@ public final class PartyManager {
         catch (IllegalStateException e) { return ""; }
     }
     public void tick() {
-        codes.tick();
-        bridge.tick(client); permissions.update(state); syncMultiplayer(); sessions.tick();
+        leadership.tick();
+        if (!leadership.busy()) codes.tick();
+        if (!leadership.busy()) {
+            if (waitForMenuBeforeSharing && client.level == null && client.getConnection() == null && client.getSingleplayerServer() == null)
+                waitForMenuBeforeSharing = false;
+            if (!waitForMenuBeforeSharing) { bridge.tick(client); syncMultiplayer(); }
+            permissions.update(state); sessions.tick();
+        }
         if (returnPending && active() && client.level == null && client.getSingleplayerServer() == null
                 && (client.gui.screen() instanceof TitleScreen || client.gui.screen() instanceof PartyScreen
                 || client.gui.screen() instanceof net.minecraft.client.gui.screens.DisconnectedScreen)) {
@@ -264,5 +287,37 @@ public final class PartyManager {
     public void background(Runnable action) { worker.execute(action); }
     public void message(String key) { client.execute(() -> message = key); }
     public void returnToParty() { client.execute(() -> returnPending = active()); }
-    public void shutdown() { leave(); worker.shutdown(); }
+    public void shutdown() { leaveImmediately(); worker.shutdown(); }
+    private void observeHost(HostNode node) {
+        node.leadershipListener(event -> client.execute(() -> leadership.hostEvent(node, event)));
+    }
+    void acceptHostState(HostNode node, LobbyState next) { if (host == node) state = next; }
+    void relayLost(String key) { invite = ""; message = key; }
+    boolean retireSharedWorld() {
+        boolean partyConnection = sessions.partyConnection();
+        sessions.reset(); bridge.detach(); sharedMultiplayer = null;
+        return partyConnection;
+    }
+    void promoteHost(HostNode next, E4mcRelay relay) {
+        GuestNode previous = guest;
+        ++generation; codes.reset(); leadership.reset(); retireSharedWorld();
+        guest = null; host = next; relayExposure = relay; internetExposure = null;
+        state = next.snapshot(); invite = relay.invitation(next.invite()).encode(); busy = false; diagnosticRole = "HOST";
+        waitForMenuBeforeSharing = client.level != null || client.getConnection() != null || client.getSingleplayerServer() != null;
+        observeHost(next); message = "leader_changed";
+        if (previous != null) background(previous::close);
+    }
+    void migrateGuest(Invite next, String resume) {
+        HostNode previousHost = host; GuestNode previousGuest = guest;
+        E4mcRelay previousRelay = relayExposure; InternetExposure previousExposure = internetExposure;
+        int operation = ++generation;
+        leadership.reset(); codes.reset(); retireSharedWorld();
+        host = null; guest = null; relayExposure = null; internetExposure = null; invite = ""; busy = true; diagnosticRole = "GUEST";
+        message = "leader_switching";
+        background(() -> {
+            if (previousGuest != null) previousGuest.close(); if (previousHost != null) previousHost.close();
+            if (previousRelay != null) previousRelay.close(); if (previousExposure != null) previousExposure.close();
+        });
+        connectInvite(next.encode(), operation, client.getUser().getProfileId(), client.getUser().getName(), resume);
+    }
 }

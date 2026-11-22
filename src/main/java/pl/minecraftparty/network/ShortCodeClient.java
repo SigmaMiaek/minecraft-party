@@ -42,8 +42,13 @@ public final class ShortCodeClient implements AutoCloseable {
     public Registration create(String invite) throws IOException {
         Invite parsed = Invite.decode(invite); if (!parsed.relay()) throw new Failure("codes_relay_only");
         JsonObject body = new JsonObject(); body.addProperty("invite", invite); body.addProperty("expiresAt", parsed.expiresAt());
+        body.addProperty("autoJoin", true);
         JsonObject response = call("create", body);
         String code = string(response, "code", "[0-9]{6}"), owner = string(response, "owner", "[A-Za-z0-9_-]{43}");
+        if (!response.has("autoJoin") || !response.get("autoJoin").getAsBoolean()) {
+            try { remove(new Registration(code, owner, 0)); } catch (IOException ignored) { }
+            throw new Failure("codes_update_required");
+        }
         long expiry = response.get("expiresAt").getAsLong();
         if (expiry <= System.currentTimeMillis()) throw new Failure("codes_unavailable");
         return new Registration(code, owner, expiry);
@@ -81,7 +86,7 @@ public final class ShortCodeClient implements AutoCloseable {
     private JsonObject call(String action, JsonObject body) throws IOException {
         try {
             var request = HttpRequest.newBuilder(endpoint.resolve("/v1/" + action)).timeout(Duration.ofSeconds(5))
-                    .header("User-Agent", "MinecraftParty/0.6.1 (+https://github.com/SigmaMiaek/minecraft-party)")
+                    .header("User-Agent", "MinecraftParty/0.7.0 (+https://github.com/SigmaMiaek/minecraft-party)")
                     .header("Content-Type", "application/json").header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body.toString())).build();
             var response = http.send(request, info -> new LimitedHttpBody(16384));

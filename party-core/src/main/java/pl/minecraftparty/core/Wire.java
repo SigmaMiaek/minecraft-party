@@ -5,7 +5,7 @@ import java.util.*;
 
 /** Bounded, versioned binary protocol; no Java deserialization or remote class names. */
 final class Wire {
-    static final int MAGIC = 0x4d505432; // MPT2: shared multiplayer destination and lobby chat.
+    static final int MAGIC = 0x4d505433; // MPT3: authenticated leadership handoff.
     static final int CONTROL = 1, TUNNEL = 2;
     static final int WELCOME = 1, SNAPSHOT = 2, ERROR = 3;
     static final int PING = 1, STATUS = 2, LEAVE = 3, CHAT = 4;
