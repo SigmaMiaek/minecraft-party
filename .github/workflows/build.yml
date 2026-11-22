@@ -43,6 +43,9 @@ jobs:
       - name: Validate deploy bundle without deploying
         working-directory: cloudflare
         run: npx --yes wrangler@4.166.0 deploy --dry-run --outdir ../build/worker
+      - name: Verify deployed code service supports ten-player lobbies
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: python3 cloudflare/test/live.py
   build:
     timeout-minutes: 12
     strategy:
