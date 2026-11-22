@@ -1,20 +1,20 @@
-# Minecraft Party — prototyp 0.6.0
+# Minecraft Party — prototyp 0.6.1
 
-**Pobierz prototyp:** [JAR 0.6.0 z kodami Cloudflare](https://github.com/SigmaMiaek/minecraft-party/raw/refs/heads/main/downloads/minecraft-party-0.6.0%2B26.2.jar) · [stan testów i SHA-256](downloads/README.md) · [wydania budowane przez GitHub Actions](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.6.0 pojawia się po zaliczeniu kompilacji/testów Windows i Linux oraz testów katalogu kodów. Starszy lokalny artefakt 0.5.2 pozostaje w `downloads`.
+**Pobierz prototyp:** [JAR 0.6.1 z sześcioma polami kodu](https://github.com/SigmaMiaek/minecraft-party/raw/refs/heads/main/downloads/minecraft-party-0.6.1%2B26.2.jar) · [stan testów i SHA-256](downloads/README.md) · [wydania budowane przez GitHub Actions](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.6.1 pojawia się po zaliczeniu kompilacji/testów Windows i Linux oraz testów katalogu kodów. Starszy lokalny artefakt 0.5.2 pozostaje w `downloads`.
 
-**Nowe w 0.6.0:** opcjonalne sześciocyfrowe kody przez własną usługę Cloudflare Workers Free, zatwierdzanie próśb przez hosta, wygasanie i limity prób. [Instrukcja wdrożenia i konfiguracji obu klientów](docs/CLOUDFLARE.md). Kod backendu jest w `cloudflare`; usługa nie została automatycznie wdrożona. Administrator usługi i Cloudflare otrzymują dane zaproszeń. Bez ustawienia adresu nadal działają pełne prywatne zaproszenia mp3/mp2.
+**Nowe w 0.6.1:** sześć małych pól na cyfry (XXX − XXX), osobny przycisk dołączania poniżej i pełna obsługa wklejania/klawiatury. Adres wdrożonej usługi Cloudflare jest ustawiany automatycznie, również w starych pustych konfiguracjach. Nie ma pola URL, ręcznego mp2/mp3 ani przycisków kopiowania długich zaproszeń. Tworzenie Party korzysta z e4mc. Dane TLS i sekret zaproszenia są nadal wymieniane wewnętrznie po zatwierdzeniu prośby przez hosta. [Instrukcja i zaufanie do usługi kodów](docs/CLOUDFLARE.md).
 
 Niezależny mod kliencki Fabric z lobby istniejącym poza światem i szyfrowanym tunelem do zintegrowanego serwera. Projekt nie zawiera kodu, API ani zależności Essential Mod.
 
-**Stan: skompilowany prototyp z nowym tunelem przez publiczny relay e4mc oraz osobnymi trybami bezpośredniego IPv4/UPnP i LAN. Połączenie z publicznym relayem, rozgrywka na dwóch klientach oraz Starlink/hotspot nie zostały w tym środowisku potwierdzone.**
+**Stan: skompilowany prototyp z tunelem przez publiczny relay e4mc i katalogiem sześciocyfrowych kodów. Połączenie z publicznym relayem, rozgrywka na dwóch klientach oraz Starlink/hotspot nie zostały w tym środowisku potwierdzone.**
 
 ## Instalacja prototypu
 
 1. Obaj gracze instalują Minecraft Java **26.2**, Fabric Loader **0.19.3 lub nowszy zgodny z 26.2**, Fabric API **0.161.0+26.2** i Java **25**.
-2. Skopiuj `build/libs/minecraft-party-0.6.0+26.2.jar` do katalogu `mods` każdej instancji. Usuń poprzedni JAR Party i uruchom ponownie Minecrafta. Instalowanie moda e4mc nie jest wymagane.
+2. Skopiuj `build/libs/minecraft-party-0.6.1+26.2.jar` do katalogu `mods` każdej instancji. Usuń poprzedni JAR Party i uruchom ponownie Minecrafta. Instalowanie moda e4mc nie jest wymagane.
 3. Użyj dwóch różnych, prawidłowo zalogowanych kont Minecraft. Ten prototyp zachowuje logowanie vanilla; uruchomienie developerskie bez sesji Microsoft nie sprawdza prawdziwego dołączania do świata.
-4. Host wybiera domyślny **Internet (relay e4mc)**. Nie wymaga własnego hostingu, publicznego IPv4 ani UPnP hosta. Przy pierwszej próbie pobiera zweryfikowaną bibliotekę natywną; potrzebne są HTTPS i wychodzące UDP. Po gotowości skopiuj nowe zaproszenie `mp3:`. Dokładny opis: [docs/E4MC_RELAY.md](docs/E4MC_RELAY.md).
-5. Opcjonalne tryby: Internet (P2P) używa bezpośredniego IPv4/UPnP i nadal nie działa przez zewnętrzny CGNAT, a LAN jest dla jednej sieci. Nie trzeba stawiać dedykowanego serwera ani instalować VPN.
+4. Host tworzy Party. Mod automatycznie korzysta z e4mc i domyślnej usługi kodów. Przy pierwszej próbie pobiera zweryfikowaną bibliotekę natywną; potrzebne są HTTPS i wychodzące UDP.
+5. Znajomy wpisuje sześć cyfr, a host porównuje numer prośby i ją zatwierdza. Szczegóły: [Kody i zatwierdzanie](docs/CLOUDFLARE.md).
 
 Docelowy przepływ zaimplementowany w kodzie:
 

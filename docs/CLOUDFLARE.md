@@ -18,15 +18,16 @@
 
 Jeżeli ekran panelu ma inne nazwy, użyj [oficjalnej instrukcji importu repozytorium](https://developers.cloudflare.com/workers/get-started/dashboard/) oraz [konfiguracji katalogu i poleceń](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/). Projekt jest Workerem, a nie stroną Pages.
 
-## Oba komputery
+## Oba komputery — od 0.6.1
 
-1. Zainstaluj **Minecraft Party 0.6.0+26.2**, usuń wcześniejszy JAR i uruchom grę ponownie. Wymagania Minecraft/Fabric/Java pozostają takie jak w 0.5.2.
-2. Party → **Kody Party…** (również dostępne przez **Sieć…**) → wklej ten sam publiczny adres → **Zapisz**. Zmiana adresu jest możliwa po opuszczeniu Party. Mod akceptuje HTTPS pod `workers.dev`, bez portu, ścieżki, parametrów i przekierowań.
-3. Host: utwórz Party w trybie **Internet (relay e4mc)**. Po przygotowaniu relaya i publikacji pojawi się sześciocyfrowy kod. **Kopiuj zaproszenie** kopiuje teraz ten kod; pełne mp3 nadal można skopiować osobnym przyciskiem w Kodach Party.
-4. Znajomy wpisuje 6 cyfr (także z zerem na początku) i klika **Dołącz**. Dostanie **numer swojej prośby**. Host otwiera Kody Party, porównuje ten numer ze znajomym przez zaufany komunikator lub rozmowę i klika **Przyjmij** przy właściwej prośbie. Sam nick nie potwierdza tożsamości.
-5. Po zatwierdzeniu mod pobiera prywatne zaproszenie i uruchamia istniejące TLS oraz połączenie lobby. Host wybiera świat lub serwer przez zwykłe menu Minecrafta.
+1. Zainstaluj **Minecraft Party 0.6.1+26.2**, usuń wcześniejszy JAR i uruchom grę ponownie. Wymagania Minecraft/Fabric/Java pozostają takie jak w 0.5.2.
+2. Adres wdrożonej usługi jest ustawiany automatycznie. Nie ma pola URL w interfejsie. Starsze konfiguracje z pustym adresem otrzymują domyślny adres; własne poprawne adresy administratora zapisane wcześniej pozostają zachowane.
+3. Host: **Utwórz Party**. Mod korzysta z e4mc i publikuje kod w katalogu. Po przygotowaniu kodu **Kopiuj kod** kopiuje tylko sześć cyfr. Przed gotowością przycisk jest nieaktywny.
+4. Znajomy wpisuje sześć cyfr w osobnych polach **XXX − XXX** i klika **Dołącz Party** pod nimi. Można wkleić cały kod (także 123-456); działa automatyczne przejście, strzałki i Backspace. Długie zaproszenia mp2/mp3 nie są przyjmowane przez ekran ani publiczną metodę dołączania.
+5. Znajomy dostanie **numer swojej prośby**. Host otwiera **Kody Party…**, porównuje ten numer ze znajomym przez zaufany komunikator lub rozmowę i klika **Przyjmij** przy właściwej prośbie. Sam nick nie potwierdza tożsamości.
+6. Po zatwierdzeniu mod otrzymuje wewnętrzne dane połączenia i uruchamia istniejące TLS oraz połączenie lobby. Host wybiera świat lub serwer przez zwykłe menu Minecrafta.
 
-Konto Cloudflare zakłada tylko administrator usługi; znajomi go nie potrzebują. Publiczny URL usługi można udostępnić, lecz tokenów, pełnych mp3 i raportów zawierających sekrety nie należy publikować.
+Konto Cloudflare zakłada tylko administrator usługi; znajomi go nie potrzebują. Długie dane zaproszenia pozostają wewnątrz protokołu: zawierają odcisk certyfikatu i sekret wymagany przez istniejący transport. Nie są już pokazywane, wklejane ani kopiowane w UI. Usunięcie danych kryptograficznych z protokołu nie jest potrzebne do sześciocyfrowego interfejsu.
 
 ## Koszt, zaufanie i ograniczenia
 
@@ -48,4 +49,4 @@ Nie wykonano tu wdrożenia na konto użytkownika ani testu nowej ścieżki kodó
 
 Użytkownik wdrożył aplikację pod adresem `https://minecraft-party.wojciechowskaola57.workers.dev`. Log Cloudflare potwierdził udane przesłanie aplikacji, wiązanie `DIRECTORY (PartyDirectory)` i zakończenie wdrożenia. Użytkownik odczytał `/health` i przesłał odpowiedź `{"service":"minecraft-party-codes","protocol":1}`. Narzędzia tej sesji nie mogły samodzielnie otworzyć tego adresu. Nie potwierdzono jeszcze nowej ścieżki zatwierdzania na dwóch klientach Minecraft.
 
-Adres nie jest automatycznie wpisany do konfiguracji moda. Na obu komputerach ustaw go przez Party → Kody Party → Zapisz.
+W 0.6.0 adres trzeba było ustawić ręcznie. Od 0.6.1 jest domyślny i stare puste konfiguracje są migrowane automatycznie.

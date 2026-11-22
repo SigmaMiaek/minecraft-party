@@ -13,12 +13,14 @@ import static pl.minecraftparty.ui.PartyVisuals.*;
 public final class PartyScreen extends Screen {
     private final Screen parent;
     private final PartyManager manager = PartyClient.manager;
-    private String draftCode = "", draftName, chatDraft = "";
+    private String draftName, chatDraft = "";
+    private final PartyCodeDigits draftDigits = new PartyCodeDigits();
     private int limit, page, tab;
     private String layoutKey = "";
     private int left, contentWidth, top, bottom, playersWidth, settingsWidth, chatX, chatWidth, settingsX;
     private boolean wide;
-    private EditBox name, code;
+    private EditBox name;
+    private int formX, formWidth, nameLabelY, codeLabelY, digitsY;
     private PartyChat chat;
     private Button create, join, copy, retry, follow, teleport;
     private Button codes;
@@ -34,7 +36,7 @@ public final class PartyScreen extends Screen {
     @Override protected void init() {
         contentWidth = Math.min(800, width - 24); left = (width - contentWidth) / 2;
         top = 48; bottom = height - 58; wide = width >= 520 && height >= 300;
-        create = join = copy = retry = follow = teleport = null; name = code = null; chat = null; operatorButtons.clear();
+        create = join = copy = retry = follow = teleport = null; name = null; chat = null; operatorButtons.clear();
         codes = null;
         button("back", width - 76, 7, 68, this::onClose);
         button("diagnostics.open", 8, 7, 84, () -> minecraft.gui.setScreen(new NetworkDiagnosticsScreen(this)));
@@ -62,25 +64,24 @@ public final class PartyScreen extends Screen {
         layoutKey = layoutKey(); updateButtons();
     }
     private void initCreate() {
-        int formWidth = Math.min(380, contentWidth - 16), x = (width - formWidth) / 2;
-        name = addRenderableWidget(new EditBox(font, x, 66, formWidth - 112, 20, tr("name")));
+        formWidth = Math.min(380, contentWidth - 16); formX = (width - formWidth) / 2;
+        boolean compact = height < 290;
+        int nameY = compact ? 57 : Math.max(64, (height - 300) / 2 + 64);
+        nameLabelY = nameY - 13;
+        name = addRenderableWidget(new EditBox(font, formX, nameY, formWidth - 112, 20, tr("name")));
         name.setMaxLength(40); name.setValue(draftName); name.setResponder(value -> draftName = value);
-        Button capacity = button("limit", x + formWidth - 106, 66, 106, () -> {
+        Button capacity = button("limit", formX + formWidth - 106, nameY, 106, () -> {
             limit = limit == LobbyModel.MAX_MEMBERS ? 2 : limit + 1; rebuildWidgets();
         });
         capacity.setMessage(tr("limit", limit));
-        int half = (formWidth - 6) / 2;
-        Button mode = button(manager.config.networkLabel(), x, 94, half, () -> {
-            manager.config.nextNetworkMode(); rebuildWidgets();
-        });
-        mode.setTooltip(Tooltip.create(tr("network.hint")));
-        create = button("create", x + half + 6, 94, formWidth - half - 6, () -> manager.create(draftName.strip(), limit));
-        code = addRenderableWidget(new EditBox(font, x, 132, formWidth, 20, tr("invite")));
-        code.setMaxLength(Invite.MAX_CODE_LENGTH); code.setHint(tr("paste")); code.setValue(draftCode);
-        code.setResponder(value -> { draftCode = value; updateButtons(); });
-        join = button("join", x, 160, formWidth, () -> { manager.join(draftCode); draftCode = ""; });
-        if (height >= 270) codes = button("codes.open", x, 188, formWidth, () -> minecraft.gui.setScreen(new PartyCodesScreen(this)));
+        int createY = nameY + 26;
+        create = button("create", formX, createY, formWidth, () -> manager.create(draftName.strip(), limit));
+        codeLabelY = createY + (compact ? 32 : 42); digitsY = codeLabelY + 15;
+        new PartyCodeInput(font, this::addRenderableWidget, this::setFocused, draftDigits, this::updateButtons,
+                this::joinParty, (width - PartyCodeInput.WIDTH) / 2, digitsY);
+        join = button("join", formX, digitsY + PartyCodeInput.BOX + (compact ? 7 : 14), formWidth, this::joinParty);
     }
+    private void joinParty() { if (!manager.busy() && draftDigits.complete()) manager.join(draftDigits.value()); }
     private int rows() { return Math.max(1, (bottom - top - 54) / 26); }
     private void initPlayers() {
         LobbyState state = manager.state(); if (state == null) return;
@@ -129,7 +130,9 @@ public final class PartyScreen extends Screen {
         if (teleport != null) teleport.setTooltip(Tooltip.create(tr("teleport_hint")));
         button("leave", x, bottom - 25, w, manager::leave);
     }
-    private void copyInvite() { minecraft.keyboardHandler.setClipboard(manager.codes.code().isEmpty() ? manager.invite() : manager.codes.code()); manager.message("copied"); }
+    private void copyInvite() {
+        if (ShortCodeClient.isCode(manager.codes.code())) { minecraft.keyboardHandler.setClipboard(manager.codes.code()); manager.message("copied"); }
+    }
     private String layoutKey() {
         var state = manager.state();
         return manager.active() + ":" + (manager.host() != null) + ":" + manager.permissions.available() + ":" +
@@ -138,9 +141,9 @@ public final class PartyScreen extends Screen {
     @Override public void tick() { if (!layoutKey.equals(layoutKey())) rebuildWidgets(); updateButtons(); }
     private void updateButtons() {
         if (create != null) create.active = !manager.busy() && !draftName.isBlank();
-        if (join != null) join.active = !manager.busy() && (Invite.hasSupportedPrefix(draftCode) || ShortCodeClient.isCode(draftCode));
+        if (join != null) join.active = !manager.busy() && draftDigits.complete();
         if (codes != null && manager.host() != null) codes.setMessage(tr("codes.manage", manager.codes.code().isEmpty() ? "—" : manager.codes.code(), manager.codes.pending().size()));
-        if (copy != null) copy.active = !manager.invite().isEmpty();
+        if (copy != null) copy.active = ShortCodeClient.isCode(manager.codes.code());
         if (follow != null) follow.setMessage(tr("follow", Component.translatable(manager.config.shareMultiplayer ? "options.on" : "options.off")));
         if (teleport != null) {
             teleport.setMessage(tr("teleport", Component.translatable(manager.config.allowPartyTeleport ? "options.on" : "options.off")));
@@ -163,16 +166,16 @@ public final class PartyScreen extends Screen {
         centered(graphics, font, !manager.codes.check().isEmpty() && manager.host() == null ? tr("codes.check", manager.codes.check())
                 : state == null ? tr("subtitle") : Component.literal(state.name()), width, 29, 0xFFAAAAAA);
         if (!manager.active()) {
-            int formWidth = Math.min(380, contentWidth - 16), x = (width - formWidth) / 2;
-            text(graphics, font, tr("name"), x, 53, 0xFFFFFFFF, formWidth);
-            text(graphics, font, tr("invite"), x, 119, 0xFFFFFFFF, formWidth);
+            text(graphics, font, tr("name"), formX, nameLabelY, 0xFFFFFFFF, formWidth);
+            text(graphics, font, tr("code.label"), formX, codeLabelY, 0xFFFFFFFF, formWidth);
+            centered(graphics, font, Component.literal("−"), width, digitsY + 9, 0xFFAAAAAA);
         } else {
             if (wide || tab == 0) drawPlayers(graphics, state);
             if (chat != null) chat.draw(graphics);
             if (wide || tab == 2) drawSettings(graphics, state);
         }
         text(graphics, font, tr("message." + manager.message(), manager.codes.check()), left, height - 49, 0xFFFFFFFF, contentWidth);
-        text(graphics, font, tr("privacy"), left, height - 32, 0xFFAAAAAA, contentWidth);
+        text(graphics, font, tr("codes.privacy"), left, height - 32, 0xFFAAAAAA, contentWidth);
         text(graphics, font, tr("privacy_invite"), left, height - 20, 0xFFAAAAAA, contentWidth);
         super.extractRenderState(graphics, mouseX, mouseY, delta);
     }

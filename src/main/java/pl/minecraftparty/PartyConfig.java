@@ -2,12 +2,11 @@ package pl.minecraftparty;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParser;
 import net.fabricmc.loader.api.FabricLoader;
 import java.io.IOException;
 import java.nio.file.*;
 
-/** Preferences only. Invitations, addresses and credentials are never persisted. */
+/** Preferences and the public directory URL only; invitations and credentials are never persisted. */
 public final class PartyConfig {
     public enum NetworkMode { RELAY, DIRECT, LAN }
     public int memberLimit = 6;
@@ -16,7 +15,8 @@ public final class PartyConfig {
     public boolean allowPartyTeleport = false;
     public boolean internetParty = true;
     public NetworkMode networkMode = NetworkMode.RELAY;
-    public String codeServiceUrl = "";
+    public static final String DEFAULT_CODE_SERVICE_URL = "https://minecraft-party.wojciechowskaola57.workers.dev";
+    public String codeServiceUrl = DEFAULT_CODE_SERVICE_URL;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Path path() { return FabricLoader.getInstance().getConfigDir().resolve("minecraft-party.json"); }
     public static PartyConfig load() {
@@ -24,20 +24,19 @@ public final class PartyConfig {
             if (!Files.exists(path())) return new PartyConfig();
             String json = Files.readString(path());
             PartyConfig config = GSON.fromJson(json, PartyConfig.class);
-            if (config == null) return new PartyConfig();
-            if (!JsonParser.parseString(json).getAsJsonObject().has("networkMode"))
-                config.networkMode = config.internetParty ? NetworkMode.RELAY : NetworkMode.LAN;
-            if (config.networkMode == null) config.networkMode = NetworkMode.RELAY;
-            if (config.codeServiceUrl == null) config.codeServiceUrl = "";
-            if (!config.codeServiceUrl.isBlank()) {
-                try { config.codeServiceUrl = pl.minecraftparty.network.ShortCodeClient.endpoint(config.codeServiceUrl).toString(); }
-                catch (IllegalArgumentException e) { config.codeServiceUrl = ""; }
-            }
-            config.memberLimit = Math.clamp(config.memberLimit, 2, pl.minecraftparty.core.LobbyModel.MAX_MEMBERS);
-            if (config.lobbyName == null || config.lobbyName.isBlank() || config.lobbyName.length() > 40)
-                config.lobbyName = "Minecraft Party";
-            return config;
+            return normalize(config);
         } catch (IOException | RuntimeException e) { return new PartyConfig(); }
+    }
+    static PartyConfig normalize(PartyConfig config) {
+        if (config == null) return new PartyConfig();
+        config.networkMode = NetworkMode.RELAY;
+        if (config.codeServiceUrl == null || config.codeServiceUrl.isBlank()) config.codeServiceUrl = DEFAULT_CODE_SERVICE_URL;
+        try { config.codeServiceUrl = pl.minecraftparty.network.ShortCodeClient.endpoint(config.codeServiceUrl).toString(); }
+        catch (IllegalArgumentException e) { config.codeServiceUrl = DEFAULT_CODE_SERVICE_URL; }
+        config.memberLimit = Math.clamp(config.memberLimit, 2, pl.minecraftparty.core.LobbyModel.MAX_MEMBERS);
+        if (config.lobbyName == null || config.lobbyName.isBlank() || config.lobbyName.length() > 40)
+            config.lobbyName = "Minecraft Party";
+        return config;
     }
     public void save() {
         try {

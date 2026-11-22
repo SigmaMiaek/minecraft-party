@@ -18,7 +18,7 @@ public final class PartyCodes {
     private boolean working;
     private Consumer<String> approved, failed;
     PartyCodes(PartyManager manager, Minecraft client) { this.manager = manager; this.client = client; }
-    public String code() { return room == null ? "" : room.code(); }
+    public String code() { return room == null || manager.invite().isEmpty() ? "" : room.code(); }
     public String check() { return check; }
     public List<ShortCodeClient.Pending> pending() { return pending; }
     public boolean working() { return working; }

@@ -108,6 +108,7 @@ public final class PartyManager {
     }
     public void create(String name, int limit) {
         if (active()) return;
+        config.networkMode = PartyConfig.NetworkMode.RELAY;
         int operation = ++generation; busy = true; message = "creating";
         diagnosticRole = "HOST"; previousDiagnostics = ""; setupError = "NONE";
         UUID id = client.getUser().getProfileId(); String username = client.getUser().getName();
@@ -159,16 +160,13 @@ public final class PartyManager {
     }
     public void join(String code) {
         if (active()) return;
-        if (ShortCodeClient.isCode(code) && config.codeServiceUrl.isBlank()) { message = "codes_not_configured"; return; }
+        if (!ShortCodeClient.isCode(code)) { message = "codes_six_required"; return; }
+        if (config.codeServiceUrl.isBlank()) { message = "codes_not_configured"; return; }
         int operation = ++generation; busy = true; message = "connecting";
         diagnosticRole = "GUEST"; previousDiagnostics = ""; setupError = "NONE";
         UUID id = client.getUser().getProfileId(); String username = client.getUser().getName();
-        if (ShortCodeClient.isCode(code)) {
-            message = "codes_requesting";
-            codes.join(code, username, invitation -> connectInvite(invitation, operation, id, username), key -> failed(operation, key));
-            return;
-        }
-        connectInvite(code, operation, id, username);
+        message = "codes_requesting";
+        codes.join(code, username, invitation -> connectInvite(invitation, operation, id, username), key -> failed(operation, key));
     }
     private void connectInvite(String code, int operation, UUID id, String username) {
         background(() -> {
