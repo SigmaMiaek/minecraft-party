@@ -2,13 +2,16 @@
 """Read-only checks of the public website and the separate Party code service."""
 import json
 import os
+from pathlib import Path
 import time
 import urllib.error
 import urllib.request
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 site = os.environ.get('PARTY_WEBSITE_URL', 'https://sigmamiaek.github.io/minecraft-party/').rstrip('/') + '/'
 directory = 'https://minecraft-party.wojciechowskaola57.workers.dev/'
+properties = dict(line.split('=', 1) for line in (Path(__file__).resolve().parents[2] / 'gradle.properties').read_text().splitlines() if '=' in line)
+asset = ('minecraft-party-' + quote(properties['version'], safe='') + '.jar').encode()
 
 def fetch(url):
     request = urllib.request.Request(url, headers={'User-Agent': 'MinecraftParty-Website-Check/1'})
@@ -23,6 +26,7 @@ while True:
         assert b'Tw\xc3\xb3j \xc5\x9bwiat.' in body and b'assets/world.svg' in body, 'Public website has not updated yet'
         assert 'text/html' in headers['Content-Type']
         assert b'https://sigmamiaek.github.io/minecraft-party/' in body, 'Canonical site URL has not updated yet'
+        assert asset in body, 'Public download target has not updated to the current mod release yet'
         script, headers = fetch(urljoin(site, 'app.js'))
         assert b'demoStep' in script
         image, _ = fetch(urljoin(site, 'assets/world.svg'))

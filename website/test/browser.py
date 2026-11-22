@@ -104,7 +104,7 @@ try:
         expect(page.locator('#mobile-navigation')).to_be_hidden()
         page.locator('details').first.locator('summary').click()
         expect(page.locator('details').first).to_have_attribute('open', '')
-        expect(page.locator('.download-main')).to_have_attribute('href', 'https://github.com/SigmaMiaek/minecraft-party/releases/download/v0.7.0%2B26.2/minecraft-party-0.7.0%2B26.2.jar')
+        expect(page.locator('.download-main')).to_have_attribute('href', 'https://github.com/SigmaMiaek/minecraft-party/releases/download/v0.7.1%2B26.2/minecraft-party-0.7.1%2B26.2.jar')
         assert not errors, errors
         print('Mobile navigation, FAQ, published release target, no JavaScript errors passed')
         context.close()
