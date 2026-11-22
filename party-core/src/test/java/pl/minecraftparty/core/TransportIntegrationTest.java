@@ -2,6 +2,7 @@ package pl.minecraftparty.core;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Timeout;
 import java.io.*;
 import java.net.*;
@@ -54,7 +55,7 @@ class TransportIntegrationTest {
             await(() -> host.snapshot().members().size() == 1);
         }
     }
-    @Test void rawMinecraftBytesPassThroughTlsAndLobbySurvivesTwoWorlds() throws Exception {
+    @RepeatedTest(3) void rawMinecraftBytesPassThroughTlsAndLobbySurvivesTwoWorlds() throws Exception {
         UUID guestId = UUID.randomUUID(); AtomicReference<LobbyState> state = new AtomicReference<>();
         try (HostNode host = host(4);
              GuestNode guest = new GuestNode(host.invite(), guestId, "Guest", state::set, text -> {})) {
