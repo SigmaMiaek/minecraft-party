@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.server.MinecraftServer;
 import net.fabricmc.loader.api.FabricLoader;
 import pl.minecraftparty.network.E4mcRelay;
+import pl.minecraftparty.network.ShortCodeClient;
 
 /** Minecraft-facing coordinator. UI state is written on the Minecraft client thread. */
 public final class PartyManager {
@@ -19,6 +20,7 @@ public final class PartyManager {
     private final ClientSessionManager sessions;
     public final PartyConfig config;
     public final PartyWorldPermissions permissions;
+    public final PartyCodes codes;
     private HostNode host;
     private GuestNode guest;
     private LobbyState state;
@@ -64,6 +66,7 @@ public final class PartyManager {
     }
     public PartyManager(Minecraft client) {
         this.client = client; config = PartyConfig.load(); permissions = new PartyWorldPermissions(this::message);
+        codes = new PartyCodes(this, client);
         bridge = new IntegratedServerBridge(this); sessions = new ClientSessionManager(this, client);
     }
     public LobbyState state() { return state; }
@@ -156,9 +159,18 @@ public final class PartyManager {
     }
     public void join(String code) {
         if (active()) return;
+        if (ShortCodeClient.isCode(code) && config.codeServiceUrl.isBlank()) { message = "codes_not_configured"; return; }
         int operation = ++generation; busy = true; message = "connecting";
         diagnosticRole = "GUEST"; previousDiagnostics = ""; setupError = "NONE";
         UUID id = client.getUser().getProfileId(); String username = client.getUser().getName();
+        if (ShortCodeClient.isCode(code)) {
+            message = "codes_requesting";
+            codes.join(code, username, invitation -> connectInvite(invitation, operation, id, username), key -> failed(operation, key));
+            return;
+        }
+        connectInvite(code, operation, id, username);
+    }
+    private void connectInvite(String code, int operation, UUID id, String username) {
         background(() -> {
             try {
                 Invite invitation = Invite.decode(code.strip());
@@ -181,6 +193,8 @@ public final class PartyManager {
     }
     public void rotateInvite() {
         HostNode node = host; if (node == null) return;
+        codes.reset();
+        invite = "";
         int operation = generation;
         InternetExposure exposure = internetExposure;
         E4mcRelay relay = relayExposure;
@@ -189,6 +203,8 @@ public final class PartyManager {
     }
     public void kick(UUID id) {
         HostNode node = host; if (node == null) return;
+        codes.reset();
+        invite = "";
         int operation = generation;
         InternetExposure exposure = internetExposure;
         E4mcRelay relay = relayExposure;
@@ -197,6 +213,7 @@ public final class PartyManager {
             client.execute(() -> { if (generation == operation) invite = code; }); });
     }
     public void leave() {
+        codes.reset();
         previousDiagnostics = host != null ? hostDiagnostics() : guest != null ? "Target TCP port: " + targetPort + "\n" + guest.diagnostics() : previousDiagnostics;
         ++generation; cancelCreate.set(true);
         HostNode oldHost = host; GuestNode oldGuest = guest;
@@ -211,6 +228,7 @@ public final class PartyManager {
         catch (IllegalStateException e) { return ""; }
     }
     public void tick() {
+        codes.tick();
         bridge.tick(client); permissions.update(state); syncMultiplayer(); sessions.tick();
         if (returnPending && active() && client.level == null && client.getSingleplayerServer() == null
                 && (client.gui.screen() instanceof TitleScreen || client.gui.screen() instanceof PartyScreen

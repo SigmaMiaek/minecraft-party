@@ -6,6 +6,22 @@ on:
 permissions:
   contents: read
 jobs:
+  directory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Check Worker syntax and directory policy
+        run: |
+          node --check cloudflare/worker.mjs
+          node --test cloudflare/test/registry.test.mjs
+      - name: Exercise real local Cloudflare runtime and SQLite binding
+        run: python3 cloudflare/test/runtime.py
+      - name: Validate deploy bundle without deploying
+        working-directory: cloudflare
+        run: npx --yes wrangler@4.166.0 deploy --dry-run --outdir ../build/worker
   build:
     strategy:
       fail-fast: false
@@ -14,6 +30,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test directory authorization and expiry
+        shell: bash
+        run: node --test cloudflare/test/registry.test.mjs
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
@@ -31,7 +50,7 @@ jobs:
             party-core/build/reports/tests/test/
   publish:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: build
+    needs: [build, directory]
     runs-on: ubuntu-latest
     permissions:
       contents: write

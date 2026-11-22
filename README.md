@@ -1,8 +1,8 @@
-# Minecraft Party — prototyp 0.5.2
+# Minecraft Party — prototyp 0.6.0
 
-**Pobierz:** [gotowy JAR 0.5.2 dla Minecraft 26.2](https://github.com/SigmaMiaek/minecraft-party/raw/refs/heads/main/downloads/minecraft-party-0.5.2%2B26.2.jar) · [SHA-256](downloads/SHA256SUMS) · [wydania budowane przez GitHub Actions](https://github.com/SigmaMiaek/minecraft-party/releases).
+**Pobierz:** [wydania budowane przez GitHub Actions](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.6.0 pojawia się po zaliczeniu kompilacji/testów Windows i Linux oraz testów katalogu kodów. Starszy lokalny artefakt 0.5.2 pozostaje w `downloads`.
 
-JAR w `downloads` jest kopią lokalnego builda opisanego w raportach. Automatyczne wydanie pojawia się po udanym buildzie Gradle i testach na Linux/Windows; może mieć inną sumę SHA ze względu na pakowanie Gradle. Zgłoszony problem z pobieraniem użytkownik przypisał Operze GX i podał brak wykryć w VirusTotal: [informacja o zgłoszeniu i bibliotece sieciowej](docs/ANTIVIRUS.md).
+**Nowe w 0.6.0:** opcjonalne sześciocyfrowe kody przez własną usługę Cloudflare Workers Free, zatwierdzanie próśb przez hosta, wygasanie i limity prób. [Instrukcja wdrożenia i konfiguracji obu klientów](docs/CLOUDFLARE.md). Kod backendu jest w `cloudflare`; usługa nie została automatycznie wdrożona. Administrator usługi i Cloudflare otrzymują dane zaproszeń. Bez ustawienia adresu nadal działają pełne prywatne zaproszenia mp3/mp2.
 
 Niezależny mod kliencki Fabric z lobby istniejącym poza światem i szyfrowanym tunelem do zintegrowanego serwera. Projekt nie zawiera kodu, API ani zależności Essential Mod.
 
@@ -11,7 +11,7 @@ Niezależny mod kliencki Fabric z lobby istniejącym poza światem i szyfrowanym
 ## Instalacja prototypu
 
 1. Obaj gracze instalują Minecraft Java **26.2**, Fabric Loader **0.19.3 lub nowszy zgodny z 26.2**, Fabric API **0.161.0+26.2** i Java **25**.
-2. Skopiuj `build/libs/minecraft-party-0.5.2+26.2.jar` do katalogu `mods` każdej instancji. Usuń poprzedni JAR Party i uruchom ponownie Minecrafta. Instalowanie moda e4mc nie jest wymagane.
+2. Skopiuj `build/libs/minecraft-party-0.6.0+26.2.jar` do katalogu `mods` każdej instancji. Usuń poprzedni JAR Party i uruchom ponownie Minecrafta. Instalowanie moda e4mc nie jest wymagane.
 3. Użyj dwóch różnych, prawidłowo zalogowanych kont Minecraft. Ten prototyp zachowuje logowanie vanilla; uruchomienie developerskie bez sesji Microsoft nie sprawdza prawdziwego dołączania do świata.
 4. Host wybiera domyślny **Internet (relay e4mc)**. Nie wymaga własnego hostingu, publicznego IPv4 ani UPnP hosta. Przy pierwszej próbie pobiera zweryfikowaną bibliotekę natywną; potrzebne są HTTPS i wychodzące UDP. Po gotowości skopiuj nowe zaproszenie `mp3:`. Dokładny opis: [docs/E4MC_RELAY.md](docs/E4MC_RELAY.md).
 5. Opcjonalne tryby: Internet (P2P) używa bezpośredniego IPv4/UPnP i nadal nie działa przez zewnętrzny CGNAT, a LAN jest dla jednej sieci. Nie trzeba stawiać dedykowanego serwera ani instalować VPN.

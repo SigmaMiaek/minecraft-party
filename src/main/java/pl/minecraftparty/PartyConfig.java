@@ -16,6 +16,7 @@ public final class PartyConfig {
     public boolean allowPartyTeleport = false;
     public boolean internetParty = true;
     public NetworkMode networkMode = NetworkMode.RELAY;
+    public String codeServiceUrl = "";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Path path() { return FabricLoader.getInstance().getConfigDir().resolve("minecraft-party.json"); }
     public static PartyConfig load() {
@@ -27,6 +28,11 @@ public final class PartyConfig {
             if (!JsonParser.parseString(json).getAsJsonObject().has("networkMode"))
                 config.networkMode = config.internetParty ? NetworkMode.RELAY : NetworkMode.LAN;
             if (config.networkMode == null) config.networkMode = NetworkMode.RELAY;
+            if (config.codeServiceUrl == null) config.codeServiceUrl = "";
+            if (!config.codeServiceUrl.isBlank()) {
+                try { config.codeServiceUrl = pl.minecraftparty.network.ShortCodeClient.endpoint(config.codeServiceUrl).toString(); }
+                catch (IllegalArgumentException e) { config.codeServiceUrl = ""; }
+            }
             config.memberLimit = Math.clamp(config.memberLimit, 2, pl.minecraftparty.core.LobbyModel.MAX_MEMBERS);
             if (config.lobbyName == null || config.lobbyName.isBlank() || config.lobbyName.length() > 40)
                 config.lobbyName = "Minecraft Party";

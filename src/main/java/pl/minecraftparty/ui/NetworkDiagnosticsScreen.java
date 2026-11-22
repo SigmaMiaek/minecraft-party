@@ -18,13 +18,15 @@ public final class NetworkDiagnosticsScreen extends Screen {
     @Override protected void init() {
         report = PartyClient.manager.diagnostics();
         int left = Math.max(10, (width - 500) / 2), contentWidth = width - left * 2;
-        int third = (contentWidth - 8) / 3;
+        int third = (contentWidth - 12) / 4;
         addRenderableWidget(Button.builder(tr("diagnostics.copy"), b -> minecraft.keyboardHandler.setClipboard(report))
                 .bounds(left, height - 30, third, 20).build());
         addRenderableWidget(Button.builder(tr("diagnostics.refresh"), b -> { report = PartyClient.manager.diagnostics(); page = 0; })
                 .bounds(left + third + 4, height - 30, third, 20).build());
+        addRenderableWidget(Button.builder(tr("codes.open"), b -> minecraft.gui.setScreen(new PartyCodesScreen(this)))
+                .bounds(left + (third + 4) * 2, height - 30, third, 20).build());
         addRenderableWidget(Button.builder(tr("back"), b -> onClose())
-                .bounds(left + (third + 4) * 2, height - 30, contentWidth - (third + 4) * 2, 20).build());
+                .bounds(left + (third + 4) * 3, height - 30, contentWidth - (third + 4) * 3, 20).build());
         addRenderableWidget(Button.builder(Component.literal("↑"), b -> page = Math.max(0, page - 1))
                 .bounds(width - 26, 40, 18, 18).build());
         addRenderableWidget(Button.builder(Component.literal("↓"), b -> page++)

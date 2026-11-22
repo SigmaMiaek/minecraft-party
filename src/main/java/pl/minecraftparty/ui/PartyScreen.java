@@ -6,6 +6,7 @@ import net.minecraft.client.gui.screens.*;
 import net.minecraft.network.chat.Component;
 import pl.minecraftparty.*;
 import pl.minecraftparty.core.*;
+import pl.minecraftparty.network.ShortCodeClient;
 import java.util.*;
 import static pl.minecraftparty.ui.PartyVisuals.*;
 
@@ -20,6 +21,7 @@ public final class PartyScreen extends Screen {
     private EditBox name, code;
     private PartyChat chat;
     private Button create, join, copy, retry, follow, teleport;
+    private Button codes;
     private final Map<UUID, Button> operatorButtons = new HashMap<>();
 
     public PartyScreen(Screen parent) {
@@ -33,6 +35,7 @@ public final class PartyScreen extends Screen {
         contentWidth = Math.min(800, width - 24); left = (width - contentWidth) / 2;
         top = 48; bottom = height - 58; wide = width >= 520 && height >= 300;
         create = join = copy = retry = follow = teleport = null; name = code = null; chat = null; operatorButtons.clear();
+        codes = null;
         button("back", width - 76, 7, 68, this::onClose);
         button("diagnostics.open", 8, 7, 84, () -> minecraft.gui.setScreen(new NetworkDiagnosticsScreen(this)));
         if (!manager.active()) initCreate();
@@ -76,6 +79,7 @@ public final class PartyScreen extends Screen {
         code.setMaxLength(Invite.MAX_CODE_LENGTH); code.setHint(tr("paste")); code.setValue(draftCode);
         code.setResponder(value -> { draftCode = value; updateButtons(); });
         join = button("join", x, 160, formWidth, () -> { manager.join(draftCode); draftCode = ""; });
+        if (height >= 270) codes = button("codes.open", x, 188, formWidth, () -> minecraft.gui.setScreen(new PartyCodesScreen(this)));
     }
     private int rows() { return Math.max(1, (bottom - top - 54) / 26); }
     private void initPlayers() {
@@ -104,6 +108,7 @@ public final class PartyScreen extends Screen {
     private void initSettings() {
         int x = settingsX + 7, w = settingsWidth - 14;
         if (manager.host() != null) {
+            if (height >= 290) codes = button("codes.open", x, bottom - 73, w, () -> minecraft.gui.setScreen(new PartyCodesScreen(this)));
             if (wide) {
                 copy = button("copy", x, top + 27, w, this::copyInvite);
                 button("rotate", x, top + 51, w, manager::rotateInvite);
@@ -124,7 +129,7 @@ public final class PartyScreen extends Screen {
         if (teleport != null) teleport.setTooltip(Tooltip.create(tr("teleport_hint")));
         button("leave", x, bottom - 25, w, manager::leave);
     }
-    private void copyInvite() { minecraft.keyboardHandler.setClipboard(manager.invite()); manager.message("copied"); }
+    private void copyInvite() { minecraft.keyboardHandler.setClipboard(manager.codes.code().isEmpty() ? manager.invite() : manager.codes.code()); manager.message("copied"); }
     private String layoutKey() {
         var state = manager.state();
         return manager.active() + ":" + (manager.host() != null) + ":" + manager.permissions.available() + ":" +
@@ -133,7 +138,8 @@ public final class PartyScreen extends Screen {
     @Override public void tick() { if (!layoutKey.equals(layoutKey())) rebuildWidgets(); updateButtons(); }
     private void updateButtons() {
         if (create != null) create.active = !manager.busy() && !draftName.isBlank();
-        if (join != null) join.active = !manager.busy() && Invite.hasSupportedPrefix(draftCode);
+        if (join != null) join.active = !manager.busy() && (Invite.hasSupportedPrefix(draftCode) || ShortCodeClient.isCode(draftCode));
+        if (codes != null && manager.host() != null) codes.setMessage(tr("codes.manage", manager.codes.code().isEmpty() ? "—" : manager.codes.code(), manager.codes.pending().size()));
         if (copy != null) copy.active = !manager.invite().isEmpty();
         if (follow != null) follow.setMessage(tr("follow", Component.translatable(manager.config.shareMultiplayer ? "options.on" : "options.off")));
         if (teleport != null) {
@@ -154,7 +160,8 @@ public final class PartyScreen extends Screen {
         background(graphics, width, height);
         centered(graphics, font, title, width, 12, 0xFFFFFFFF);
         LobbyState state = manager.state();
-        centered(graphics, font, state == null ? tr("subtitle") : Component.literal(state.name()), width, 29, 0xFFAAAAAA);
+        centered(graphics, font, !manager.codes.check().isEmpty() && manager.host() == null ? tr("codes.check", manager.codes.check())
+                : state == null ? tr("subtitle") : Component.literal(state.name()), width, 29, 0xFFAAAAAA);
         if (!manager.active()) {
             int formWidth = Math.min(380, contentWidth - 16), x = (width - formWidth) / 2;
             text(graphics, font, tr("name"), x, 53, 0xFFFFFFFF, formWidth);
@@ -164,7 +171,7 @@ public final class PartyScreen extends Screen {
             if (chat != null) chat.draw(graphics);
             if (wide || tab == 2) drawSettings(graphics, state);
         }
-        text(graphics, font, tr("message." + manager.message()), left, height - 49, 0xFFFFFFFF, contentWidth);
+        text(graphics, font, tr("message." + manager.message(), manager.codes.check()), left, height - 49, 0xFFFFFFFF, contentWidth);
         text(graphics, font, tr("privacy"), left, height - 32, 0xFFAAAAAA, contentWidth);
         text(graphics, font, tr("privacy_invite"), left, height - 20, 0xFFAAAAAA, contentWidth);
         super.extractRenderState(graphics, mouseX, mouseY, delta);

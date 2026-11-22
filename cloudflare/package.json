@@ -1,0 +1,9 @@
+{
+  "name": "minecraft-party-codes",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "deploy": "npx --yes wrangler@4.166.0 deploy"
+  }
+}

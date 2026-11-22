@@ -20,3 +20,7 @@ release-assets/
 ci-artifacts/
 hs_err_pid*
 *.hprof
+node_modules/
+.wrangler/
+.dev.vars
+.dev.vars.*

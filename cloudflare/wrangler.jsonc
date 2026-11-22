@@ -1,0 +1,11 @@
+{
+  "name": "minecraft-party-codes",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-22",
+  "workers_dev": true,
+  "durable_objects": {
+    "bindings": [{ "name": "DIRECTORY", "class_name": "PartyDirectory" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PartyDirectory"] }],
+  "observability": { "enabled": false }
+}
