@@ -70,7 +70,10 @@ with tempfile.TemporaryFile(mode='w+') as log:
         assert immediate['status'] == 'approved' and immediate['invite'] == invite
         call('remove', {'code': auto['code'], 'owner': auto['owner']})
         assert call('health')['publicLobbies'] is True
+        assert call('health')['partyProtocols'] == [4, 5]
+        assert call('health')['maxPlayers'] == 10
         assert call('list', {})['lobbies'] == []
+        assert call('list', {'protocol': 5})['lobbies'] == []
         metadata = {'name': 'Public Party', 'host': 'Host', 'players': 1, 'limit': 6,
                     'inWorld': False, 'minecraft': '26.2', 'protocol': 4}
         public = call('create', {'invite': invite, 'expiresAt': int(time.time() * 1000) + 300000,
@@ -82,9 +85,20 @@ with tempfile.TemporaryFile(mode='w+') as log:
         call('host', {**owner, 'owner': secrets.token_urlsafe(32), 'listing': metadata}, 403)
         call('host', {**owner, 'listing': {**metadata, 'players': 3, 'inWorld': True}})
         assert call('list', {})['lobbies'][0]['players'] == 3
+        modern = call('create', {'invite': invite, 'expiresAt': int(time.time() * 1000) + 300000,
+                                 'autoJoin': True, 'publicLobby': True,
+                                 'listing': {**metadata, 'protocol': 5, 'limit': 10, 'players': 10}})
+        current = call('list', {'protocol': 5})
+        assert current['protocol'] == 5 and len(current['lobbies']) == 1
+        assert current['lobbies'][0]['code'] == modern['code'] and current['lobbies'][0]['limit'] == 10
+        assert len(call('list', {})['lobbies']) == 1
+        assert call('list', {})['lobbies'][0]['code'] == public['code']
+        call('list', {'protocol': '5'}, 400)
+        call('remove', {'code': modern['code'], 'owner': modern['owner']})
+        assert call('list', {'protocol': 5})['lobbies'] == []
         call('remove', owner)
         assert call('list', {})['lobbies'] == []
-        print('Real Worker + SQLite: website assets, health, approval, auto-join, capability isolation and revocation passed.')
+        print('Real Worker + SQLite: assets, health, approval, auto-join, ten-player rooms, protocol isolation and revocation passed.')
     except Exception:
         # Avoid logging request bodies/capabilities, including from Wrangler request logs.
         raise

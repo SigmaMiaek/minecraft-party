@@ -170,5 +170,9 @@
   "party.message.public_empty": "Nie ma teraz publicznych lobby. Utwórz własne lub dołącz prywatnym kodem.",
   "party.message.public_unavailable": "Nie można wczytać publicznych lobby. Spróbuj odświeżyć.",
   "party.message.public_update_required": "Publiczne lobby wymagają aktualnej usługi Cloudflare. Wdróż nowy Worker.",
-  "party.message.public_published": "Twoje publiczne Party jest na liście. Każdy może je znaleźć i dołączyć."
+  "party.message.public_published": "Twoje publiczne Party jest na liście. Każdy może je znaleźć i dołączyć.",
+  "party.landing.tab.0": "Utwórz",
+  "party.landing.tab.1": "Dołącz kodem",
+  "party.landing.tab.2": "Publiczne",
+  "party.limit_hint": "Od 2 do 10 graczy, łącznie z hostem. Użyj suwaka lub strzałek lewo/prawo."
 }

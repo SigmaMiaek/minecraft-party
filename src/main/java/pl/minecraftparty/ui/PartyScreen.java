@@ -15,12 +15,13 @@ public final class PartyScreen extends Screen {
     private final PartyManager manager = PartyClient.manager;
     private String draftName, chatDraft = "";
     private final PartyCodeDigits draftDigits = new PartyCodeDigits();
-    private int limit, page, tab;
+    private int limit, page, tab, landingTab;
     private String layoutKey = "";
     private int left, contentWidth, top, bottom, playersWidth, settingsWidth, chatX, chatWidth, settingsX;
     private boolean wide, publicLobby, wasActive;
     private EditBox name;
-    private int formX, formWidth, nameLabelY, codeLabelY, digitsY;
+    private PartyLandingLayout landing;
+    private PublicPartiesPanel browser;
     private PartyChat chat;
     private Button create, join, copy, retry, follow, teleport;
     private Button codes;
@@ -46,6 +47,7 @@ public final class PartyScreen extends Screen {
         button("diagnostics.open", 8, 7, 84, () -> minecraft.gui.setScreen(new NetworkDiagnosticsScreen(this)));
         if (!manager.active()) { if (wasActive) publicLobby = false; initCreate(); }
         else {
+            if (browser != null) browser.suspend();
             if (!wide) {
                 top = 71;
                 int tabWidth = (contentWidth - 8) / 3;
@@ -68,27 +70,39 @@ public final class PartyScreen extends Screen {
         wasActive = manager.active(); layoutKey = layoutKey(); updateButtons();
     }
     private void initCreate() {
-        formWidth = Math.min(380, contentWidth - 16); formX = (width - formWidth) / 2;
-        boolean compact = height < 290;
-        int nameY = compact ? 57 : Math.max(64, (height - 300) / 2 + 64);
-        nameLabelY = nameY - 13;
-        name = addRenderableWidget(new EditBox(font, formX, nameY, formWidth - 112, 20, tr("name")));
+        landing = PartyLandingLayout.of(width, height);
+        contentWidth = landing.content().width(); left = landing.content().x();
+        if (browser == null) browser = new PublicPartiesPanel(minecraft, manager, this, this::showPublic);
+        if (!landing.columns()) {
+            int tabWidth = (contentWidth - 8) / 3;
+            for (int i = 0; i < 3; i++) {
+                int target = i;
+                Button button = button("landing.tab." + i, left + i * (tabWidth + 4), 44, tabWidth,
+                        () -> { landingTab = target; rebuildWidgets(); });
+                button.active = landingTab != i;
+            }
+        }
+        if (landing.columns() || landingTab == 0) initCreation(landing.create());
+        if (landing.columns() || landingTab == 1) initCodeJoin(landing.join());
+        if (showPublic()) browser.layout(landing.publicList(), this::addRenderableWidget);
+        else browser.suspend();
+    }
+    private boolean showPublic() { return !manager.active() && landing != null && (landing.columns() || landingTab == 2); }
+    private void initCreation(PartyLandingLayout.Rect area) {
+        int x = area.x() + 8, w = area.width() - 16, y = area.y();
+        name = addRenderableWidget(new EditBox(font, x, y + 23, w, 20, tr("name")));
         name.setMaxLength(40); name.setValue(draftName); name.setResponder(value -> draftName = value);
-        Button capacity = button("limit", formX + formWidth - 106, nameY, 106, () -> {
-            limit = limit == LobbyModel.MAX_MEMBERS ? 2 : limit + 1; rebuildWidgets();
-        });
-        capacity.setMessage(tr("limit", limit));
-        int createY = nameY + 26;
-        create = button("create", formX, createY, formWidth - 136, () -> manager.create(draftName.strip(), limit, publicLobby));
-        Button visibility = button(publicLobby ? "visibility.public" : "visibility.private", formX + formWidth - 130, createY, 130,
+        addRenderableWidget(new PartyCapacitySlider(x, y + 49, w, limit, value -> limit = value));
+        int half = (w - 6) / 2;
+        create = button("create", x, y + 75, half, () -> manager.create(draftName.strip(), limit, publicLobby));
+        Button visibility = button(publicLobby ? "visibility.public" : "visibility.private", x + half + 6, y + 75, w - half - 6,
                 () -> { publicLobby = !publicLobby; rebuildWidgets(); });
         visibility.setTooltip(Tooltip.create(tr(publicLobby ? "visibility.public_hint" : "visibility.private_hint")));
-        codeLabelY = createY + (compact ? 32 : 42); digitsY = codeLabelY + 15;
+    }
+    private void initCodeJoin(PartyLandingLayout.Rect area) {
         new PartyCodeInput(font, this::addRenderableWidget, this::setFocused, draftDigits, this::updateButtons,
-                this::joinParty, (width - PartyCodeInput.WIDTH) / 2, digitsY);
-        int joinY = digitsY + PartyCodeInput.BOX + (compact ? 7 : 14);
-        join = button("join", formX, joinY, formWidth - 136, this::joinParty);
-        button("public.browse", formX + formWidth - 130, joinY, 130, () -> minecraft.gui.setScreen(new PublicPartiesScreen(this)));
+                this::joinParty, area.x() + (area.width() - PartyCodeInput.WIDTH) / 2, area.y() + 27);
+        join = button("join", area.x() + 8, area.y() + 59, area.width() - 16, this::joinParty);
     }
     private void joinParty() { if (!manager.busy() && draftDigits.complete()) manager.join(draftDigits.value()); }
     private int rows() { return Math.max(1, (bottom - top - 54) / 26); }
@@ -155,7 +169,12 @@ public final class PartyScreen extends Screen {
                 (state == null || state.worldId() == null) + ":" +
                 (state == null ? "" : state.members().stream().map(m -> m.id().toString()).toList());
     }
-    @Override public void tick() { if (!layoutKey.equals(layoutKey())) rebuildWidgets(); updateButtons(); }
+    @Override public void tick() {
+        if (!layoutKey.equals(layoutKey())) rebuildWidgets();
+        updateButtons();
+        if (browser != null && showPublic()) browser.tick();
+    }
+    @Override public void removed() { if (browser != null) browser.suspend(); super.removed(); }
     private void updateButtons() {
         if (create != null) create.active = !manager.busy() && !draftName.isBlank();
         if (join != null) join.active = !manager.busy() && draftDigits.complete();
@@ -187,9 +206,17 @@ public final class PartyScreen extends Screen {
         centered(graphics, font, !manager.codes.check().isEmpty() && manager.host() == null ? tr("codes.check", manager.codes.check())
                 : state == null ? tr("subtitle") : Component.literal(state.name()).append(" · ").append(tr(state.publicLobby() ? "visibility.public" : "visibility.private")), width, 29, 0xFFAAAAAA);
         if (!manager.active()) {
-            text(graphics, font, tr("name"), formX, nameLabelY, 0xFFFFFFFF, formWidth);
-            text(graphics, font, tr("code.label"), formX, codeLabelY, 0xFFFFFFFF, formWidth);
-            centered(graphics, font, Component.literal("−"), width, digitsY + 9, 0xFFAAAAAA);
+            if (landing.columns() || landingTab == 0) {
+                var area = landing.create(); panel(graphics, area.x(), area.y(), area.width(), area.height());
+                text(graphics, font, tr("name"), area.x() + 8, area.y() + 9, 0xFFFFFFFF, area.width() - 16);
+            }
+            if (landing.columns() || landingTab == 1) {
+                var area = landing.join(); panel(graphics, area.x(), area.y(), area.width(), area.height());
+                text(graphics, font, tr("code.label"), area.x() + 8, area.y() + 9, 0xFFFFFFFF, area.width() - 16);
+                text(graphics, font, Component.literal("−"), area.x() + area.width() / 2 - font.width("−") / 2,
+                        area.y() + 36, 0xFFAAAAAA, 12);
+            }
+            if (showPublic()) browser.draw(graphics, font);
         } else {
             if (wide || tab == 0) drawPlayers(graphics, state);
             if (chat != null) chat.draw(graphics);

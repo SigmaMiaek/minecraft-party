@@ -6,7 +6,7 @@ import java.util.*;
 
 /** Host authority. All mutations are serialized under this object's monitor. */
 public final class LobbyModel {
-    public static final int MAX_MEMBERS = 8; // Vanilla IntegratedServer#getMaxPlayers in Minecraft 26.2.
+    public static final int MAX_MEMBERS = 10; // Includes the host; the bridge applies this limit to shared worlds.
     public static final int MAX_CHAT_MESSAGES = 64;
     public static final int MAX_CHAT_LENGTH = 256;
     private static final long GRACE_MILLIS = Duration.ofMinutes(2).toMillis();

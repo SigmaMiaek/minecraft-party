@@ -89,17 +89,19 @@ public final class ShortCodeClient implements AutoCloseable {
         json.addProperty("host", state.members().stream().filter(LobbyState.Member::host).findFirst().orElseThrow().name());
         json.addProperty("players", state.members().size()); json.addProperty("limit", state.limit());
         json.addProperty("inWorld", state.worldId() != null);
-        json.addProperty("minecraft", "26.2"); json.addProperty("protocol", 4);
+        json.addProperty("minecraft", "26.2"); json.addProperty("protocol", PartyProtocol.VERSION);
         return json;
     }
     public PublicPage list(int page, int size) throws IOException {
         if (page < 0 || page > 255 || size < 1 || size > 16) throw new IllegalArgumentException("page");
         JsonObject body = new JsonObject(); body.addProperty("page", page); body.addProperty("size", size);
+        body.addProperty("protocol", PartyProtocol.VERSION);
         return parsePublicPage(call("list", body), page, size);
     }
     static PublicPage parsePublicPage(JsonObject response, int page, int size) throws Failure {
         try {
             if (!flag(response, "publicLobbies")) throw new Failure("public_update_required");
+            if (!response.has("protocol") || integer(response, "protocol") != PartyProtocol.VERSION) throw new Failure("public_update_required");
             int returnedPage = integer(response, "page"), pages = integer(response, "pages");
             JsonArray rows = response.getAsJsonArray("lobbies");
             if (returnedPage != page || pages < 1 || pages > 256 || rows == null || rows.size() > size
@@ -107,7 +109,7 @@ public final class ShortCodeClient implements AutoCloseable {
             List<PublicParty> result = new ArrayList<>(); Set<String> codes = new HashSet<>();
             for (JsonElement entry : rows) {
                 JsonObject item = entry.getAsJsonObject();
-                if (!text(item, "minecraft").equals("26.2") || integer(item, "protocol") != 4) throw new IllegalArgumentException("version");
+                if (!text(item, "minecraft").equals("26.2") || integer(item, "protocol") != PartyProtocol.VERSION) throw new IllegalArgumentException("version");
                 PublicParty lobby = new PublicParty(text(item, "code"), text(item, "name"), text(item, "host"),
                         integer(item, "players"), integer(item, "limit"), flag(item, "inWorld"));
                 if (!codes.add(lobby.code())) throw new IllegalArgumentException("duplicate code");
@@ -153,7 +155,7 @@ public final class ShortCodeClient implements AutoCloseable {
     private JsonObject call(String action, JsonObject body) throws IOException {
         try {
             var request = HttpRequest.newBuilder(endpoint.resolve("/v1/" + action)).timeout(Duration.ofSeconds(5))
-                    .header("User-Agent", "MinecraftParty/0.8.0 (+https://github.com/SigmaMiaek/minecraft-party)")
+                    .header("User-Agent", "MinecraftParty/0.9.0 (+https://github.com/SigmaMiaek/minecraft-party)")
                     .header("Content-Type", "application/json").header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body.toString())).build();
             var response = http.send(request, info -> new LimitedHttpBody(16384));

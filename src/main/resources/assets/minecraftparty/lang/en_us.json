@@ -170,5 +170,9 @@
   "party.message.public_empty": "No public parties right now. Create one or join a private Party by code.",
   "party.message.public_unavailable": "Cannot load public parties. Try refreshing.",
   "party.message.public_update_required": "Public parties require the latest Cloudflare service. Deploy the Worker update.",
-  "party.message.public_published": "Your public Party is listed. Anyone can find it and join."
+  "party.message.public_published": "Your public Party is listed. Anyone can find it and join.",
+  "party.landing.tab.0": "Create",
+  "party.landing.tab.1": "Join by code",
+  "party.landing.tab.2": "Public",
+  "party.limit_hint": "2–10 players, including the host. Use the slider or left/right arrow keys."
 }

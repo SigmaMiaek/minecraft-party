@@ -5,7 +5,7 @@ public record PublicParty(String code, String name, String host, int players, in
     public PublicParty {
         if (code == null || !code.matches("[0-9]{6}") || !validName(name)
                 || host == null || !host.matches("[A-Za-z0-9_]{1,16}")
-                || limit < 2 || limit > 8 || players < 1 || players > limit) throw new IllegalArgumentException("public lobby");
+                || limit < 2 || limit > pl.minecraftparty.core.LobbyModel.MAX_MEMBERS || players < 1 || players > limit) throw new IllegalArgumentException("public lobby");
     }
     public boolean full() { return players >= limit; }
     public static boolean validName(String name) {

@@ -1,5 +1,7 @@
 # Usługa kodów Minecraft Party
 
+W 0.9.0 lista przyjmuje `protocol: 5` i limity 2–10 (łącznie z hostem). Brak parametru `protocol` zachowuje listę MPT4 dla 0.8.0 i limit 2–8; oba protokoły widzą wyłącznie zgodne wpisy. Odpowiedź listy zwraca wybrany protokół. `/health` ogłasza `partyProtocols: [4, 5]` i `maxPlayers: 10`. Wdrożenie aktualizuje ten sam Worker i tę samą bazę bez zmiany adresu w modzie.
+
 Od 0.8.0 `POST /v1/list` udostępnia wyłącznie lobby jawnie utworzone jako publiczne. Nowe i starsze pokoje są domyślnie prywatne. Publiczny wpis zawiera kod dołączenia, nazwę, deklarowanego hosta, liczbę miejsc i status gry; bez zaproszenia mp3, właścicielskiego tokenu i adresów połączeń. Tylko właściciel odnawia wpis i zmienia metadane. Lista ma stronicowanie oraz limity, a wpisy wygasają po 120 sekundach bez heartbeat. `/health` sygnalizuje `publicLobbies: true`. Nie jest wymagana nowa migracja bazy: dotychczasowe rekordy pozostają prywatne.
 
 Kod do wdrożenia w Cloudflare Workers Free. Durable Object z backendem SQLite jest tworzony przez migrację w `wrangler.jsonc`. Nie jest potrzebny osobny VPS, domena, baza D1 ani token w modzie. Instrukcja po polsku: [docs/CLOUDFLARE.md](../docs/CLOUDFLARE.md).

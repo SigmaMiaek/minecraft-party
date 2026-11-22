@@ -55,10 +55,11 @@ public final class IntegratedServerBridge {
                 }
                 ((IntegratedServerAccess) server).party$setPublishedPort(address.getPort());
                 ((IntegratedServerAccess) server).party$setScope(MinecraftServer.MultiplayerScope.LAN);
+                ((PartyServerLimit) server).party$setPlayerLimit(host.snapshot().limit());
                 server.setCommandsAllowedForOtherPlayers(false);
-                if (context.cancelled.get()) { server.unpublishServer(); return; }
+                if (context.cancelled.get()) { unpublish(context); return; }
                 manager.permissions.start(server, hostId, members, allowTeleport);
-                if (context.cancelled.get()) { manager.permissions.stop(server); server.unpublishServer(); return; }
+                if (context.cancelled.get()) { manager.permissions.stop(server); unpublish(context); return; }
                 // The same serialized worker also handles detach, so a cancelled publication
                 // cannot reopen a world after its close task has completed.
                 manager.background(() -> {
@@ -70,6 +71,7 @@ public final class IntegratedServerBridge {
                 context.stage = "FAILED"; context.failure = e.getClass().getSimpleName();
                 manager.permissions.stop(server);
                 if (context.ownsListener.get()) {
+                    ((PartyServerLimit) server).party$setPlayerLimit(0);
                     server.getConnection().stopTcpServerListener();
                     ((IntegratedServerAccess) server).party$setPublishedPort(-1);
                     ((IntegratedServerAccess) server).party$setScope(MinecraftServer.MultiplayerScope.OFF);
@@ -83,11 +85,16 @@ public final class IntegratedServerBridge {
         idleStage = "DETACHED";
         if (context == null) return;
         context.cancelled.set(true);
+        ((PartyServerLimit) context.server).party$setPlayerLimit(0);
         manager.permissions.stop(context.server);
         manager.background(() -> context.host.closeWorld(context.worldId));
         if (context.server.isRunning()) context.server.execute(() -> {
-            if (context.ownsListener.get()) context.server.unpublishServer();
+            if (context.ownsListener.get()) unpublish(context);
         });
+    }
+    private static void unpublish(Context context) {
+        ((PartyServerLimit) context.server).party$setPlayerLimit(0);
+        context.server.unpublishServer();
     }
     public void serverStopping(MinecraftServer server) {
         retired = server;

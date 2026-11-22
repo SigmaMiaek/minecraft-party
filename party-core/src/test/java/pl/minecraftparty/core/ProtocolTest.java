@@ -32,6 +32,16 @@ class ProtocolTest {
             assertThrows(IOException.class, () -> Wire.snapshot(input(shortened)));
         }
     }
+    @Test void tenMembersFitTheModelAndWireButTheEleventhIsRejected() throws Exception {
+        var model = new LobbyModel(UUID.randomUUID(), "Host", "Ten players", 10, true);
+        for (int i = 1; i < 10; i++) model.join(UUID.randomUUID(), "Guest" + i, model.inviteSecret(), "");
+        assertEquals(10, model.snapshot().members().size());
+        var bytes = new ByteArrayOutputStream(); Wire.snapshot(new DataOutputStream(bytes), model.snapshot());
+        assertEquals(model.snapshot(), Wire.snapshot(input(bytes.toByteArray())));
+        assertEquals(0x4d505435, Wire.MAGIC);
+        assertThrows(SecurityException.class, () -> model.join(UUID.randomUUID(), "Extra", model.inviteSecret(), ""));
+        assertThrows(IllegalArgumentException.class, () -> new LobbyModel(UUID.randomUUID(), "Host", "Too many", 11));
+    }
     @Test void lengthsAndStateEnumsAreBounded() {
         assertThrows(IOException.class, () -> Wire.text(input(new byte[]{-1, -1}), 16));
         assertThrows(IOException.class, () -> Wire.status(input(new byte[]{100})));

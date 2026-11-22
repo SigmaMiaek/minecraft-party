@@ -145,5 +145,22 @@ export function runChecks() {
     const f = fixture(); for (let i = 0; i < 60; i++) f.call('list', {});
     rejected(() => f.call('list', {}), 429);
   });
+  test('ten-player rooms are discoverable only by compatible clients', () => {
+    const f = fixture(), old = publish(f), modern = publish(f, { protocol: 5, limit: 10, players: 10 });
+    const legacy = f.call('list', {}), current = f.call('list', { protocol: 5 });
+    assert(legacy.protocol === 4 && legacy.lobbies.length === 1 && legacy.lobbies[0].code === old.code, 'legacy isolation');
+    assert(current.protocol === 5 && current.lobbies.length === 1 && current.lobbies[0].code === modern.code
+      && current.lobbies[0].limit === 10 && current.lobbies[0].players === 10, 'ten-player room missing');
+    f.call('remove', { code: modern.code, owner: modern.owner });
+    assert(f.call('list', { protocol: 5 }).lobbies.length === 0, 'modern room not removed');
+    assert(f.call('list', {}).lobbies.length === 1, 'legacy room lost');
+  });
+  test('both protocol lists preserve privacy and enforce their own capacity limits', () => {
+    const f = fixture(true);
+    assert(f.call('list', { protocol: 5 }).lobbies.length === 0, 'private room exposed to modern clients');
+    for (const extra of [{ protocol: 4, limit: 9 }, { protocol: 5, limit: 11 }, { protocol: 5, limit: 10, players: 11 }])
+      rejected(() => publish(fixture(), extra), 400);
+    for (const protocol of [3, 6, '5', true]) rejected(() => f.call('list', { protocol }), 400);
+  });
   return passed;
 }

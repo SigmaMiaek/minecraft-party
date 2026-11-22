@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import pl.minecraftparty.ui.PartyScreen;
 import pl.minecraftparty.ui.PartyCodesScreen;
 import pl.minecraftparty.ui.NetworkDiagnosticsScreen;
-import pl.minecraftparty.ui.PublicPartiesScreen;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.lwjgl.glfw.GLFW.*;
@@ -34,7 +33,7 @@ final class PartyMenuShortcutTest {
         for (Class<? extends Screen> type : java.util.List.of(OptionsScreen.class, KeyBindsScreen.class,
                 ReplacedControls.class, ConnectScreen.class, ProgressScreen.class, LevelLoadingScreen.class,
                 PauseScreen.class, SelectWorldScreen.class, JoinMultiplayerScreen.class,
-                ConfirmScreen.class, PartyScreen.class, PartyCodesScreen.class, NetworkDiagnosticsScreen.class, PublicPartiesScreen.class))
+                ConfirmScreen.class, PartyScreen.class, PartyCodesScreen.class, NetworkDiagnosticsScreen.class))
             assertFalse(PartyMenuShortcut.allowsScreen(type), type.getSimpleName());
         assertFalse(PartyMenuShortcut.allowsScreen(null));
     }

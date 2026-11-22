@@ -19,7 +19,7 @@ const random = {
 export default {
   async fetch(request, env) {
     if (request.method === 'GET' && new URL(request.url).pathname === '/health')
-      return reply({ service: 'minecraft-party-codes', protocol: 1, autoJoin: true, publicLobbies: true });
+      return reply({ service: 'minecraft-party-codes', protocol: 1, autoJoin: true, publicLobbies: true, partyProtocols: [4, 5], maxPlayers: 10 });
     if (request.method !== 'POST' || !/^\/v1\/(create|request|poll|host|decide|remove|list)$/.test(new URL(request.url).pathname))
       return reply({ error: 'not_found' }, 404);
     if (request.headers.has('Origin')) return reply({ error: 'forbidden' }, 403);

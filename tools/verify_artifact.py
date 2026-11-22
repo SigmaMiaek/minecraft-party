@@ -57,6 +57,7 @@ for target, fields in {
     for field in fields: assert field in actual, (target, field)
 print(f'Artifact OK: {artifact.name}; {len(en)} translations in each language; accessor targets match Minecraft 26.2.')
 permission_methods = {
+    'net.minecraft.client.server.IntegratedServer': 'public int getMaxPlayers();',
     'net.minecraft.server.players.PlayerList': 'public boolean isOp(net.minecraft.server.players.NameAndId);',
     'net.minecraft.server.MinecraftServer': 'public net.minecraft.server.permissions.LevelBasedPermissionSet getProfilePermissions(net.minecraft.server.players.NameAndId);',
 }
