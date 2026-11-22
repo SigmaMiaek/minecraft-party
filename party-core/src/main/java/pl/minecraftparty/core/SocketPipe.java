@@ -9,6 +9,7 @@ final class SocketPipe {
     // Retain the transport separately: SSLSocket.close() can wait for a writer's
     // close_notify lock. Aborting TCP first releases blocked reads/writes on Windows.
     private static final Map<Socket, Socket> transports = Collections.synchronizedMap(new WeakHashMap<>());
+    private static final boolean WINDOWS = System.getProperty("os.name", "").startsWith("Windows");
     private SocketPipe() { }
     static void track(Socket tls, Socket transport) {
         if (tls == transport) throw new IllegalArgumentException("layered socket required");
@@ -18,9 +19,21 @@ final class SocketPipe {
         @Override public void close() { SocketPipe.close(socket); }
     }
     static void transfer(Socket a, Socket b) throws InterruptedException {
-        Thread reverse = Thread.ofVirtual().name("party-pipe-reverse").start(() -> pump(b, a));
-        try { pump(a, b); reverse.join(); }
-        finally { close(a); close(b); reverse.interrupt(); }
+        // Bulk virtual-thread socket writes stall on the Windows loopback path.
+        // Only authenticated world streams reach here (at most one per member).
+        Thread reverse = startPump("party-pipe-reverse", () -> pump(b, a));
+        Thread forward = null;
+        try {
+            if (WINDOWS) { forward = startPump("party-pipe-forward", () -> pump(a, b)); forward.join(); }
+            else pump(a, b);
+            reverse.join();
+        } finally {
+            close(a); close(b); reverse.interrupt();
+            if (forward != null) forward.interrupt();
+        }
+    }
+    private static Thread startPump(String name, Runnable task) {
+        return WINDOWS ? Thread.ofPlatform().daemon().name(name).start(task) : Thread.ofVirtual().name(name).start(task);
     }
     private static void pump(Socket from, Socket to) {
         try {
