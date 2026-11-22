@@ -48,6 +48,12 @@ try:
             print(f'Render: {width}x{height}, assets loaded',flush=True)
         assert not overflow, f'Horizontal overflow at widths {overflow}'
 
+        for width, selector, name in [(1440, '#mozliwosci', 'features'), (1440, '.leadership-block', 'leader'), (1440, '#instalacja', 'install'), (1440, '#pytania', 'faq'), (390, '#mozliwosci', 'mobile-feature')]:
+            page.set_viewport_size({'width': width, 'height': 1000})
+            page.locator(selector).evaluate('(element) => window.scrollTo(0, element.offsetTop - 110)')
+            shot = page.screenshot(type='jpeg', quality=35)
+            print(f'VISUAL_SECTION_{name}=' + base64.b64encode(shot).decode(),flush=True)
+
         page.set_viewport_size({'width': 1440, 'height': 1000})
         page.goto(url)
         expect(page.locator('#demo-code')).to_have_text('••• − •••')
