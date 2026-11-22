@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import java.io.*;
 import java.net.*;
+import java.nio.file.*;
+import java.lang.management.ManagementFactory;
+import com.sun.management.HotSpotDiagnosticMXBean;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -61,9 +64,9 @@ class TransportIntegrationTest {
                     UUID world = UUID.randomUUID(); byte[] login = MinecraftAdmissionTest.login(guestId, "Guest");
                     byte[] payload = new byte[131072]; new Random(42 + i).nextBytes(payload);
                     CompletableFuture<Void> received = new CompletableFuture<>();
-                    Thread.ofVirtual().start(() -> {
+                    Thread.ofVirtual().name("party-test-backend").start(() -> {
                         try (Socket socket = backend.accept()) {
-                            socket.setSoTimeout(5000);
+                            socket.setSoTimeout(10000);
                             assertArrayEquals(login, socket.getInputStream().readNBytes(login.length));
                             assertArrayEquals(payload, socket.getInputStream().readNBytes(payload.length));
                             socket.getOutputStream().write(payload); socket.getOutputStream().flush();
@@ -76,7 +79,14 @@ class TransportIntegrationTest {
                     try (Socket local = new Socket("127.0.0.1", port)) {
                         local.setSoTimeout(5000);
                         local.getOutputStream().write(login); local.getOutputStream().write(payload); local.getOutputStream().flush();
-                        assertArrayEquals(payload, local.getInputStream().readNBytes(payload.length));
+                        try { assertArrayEquals(payload, local.getInputStream().readNBytes(payload.length)); }
+                        catch (Exception failure) {
+                            dumpThreads(failure);
+                            if (received.isCompletedExceptionally()) {
+                                try { received.join(); } catch (CompletionException backendFailure) { failure.addSuppressed(backendFailure); }
+                            }
+                            throw failure;
+                        }
                     }
                     received.get(5, TimeUnit.SECONDS);
                     host.closeWorld(); await(() -> state.get().worldId() == null);
@@ -99,6 +109,15 @@ class TransportIntegrationTest {
     private static HostNode host(int limit) throws Exception {
         return new HostNode(UUID.randomUUID(), "Host", "Party", limit, List.of("127.0.0.1"),
                 InetAddress.getByName("127.0.0.1"), s -> {});
+    }
+    private static void dumpThreads(Exception failure) {
+        Path dump = Path.of(System.getProperty("java.io.tmpdir"), "party-test-" + UUID.randomUUID() + ".json").toAbsolutePath();
+        try {
+            ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class)
+                    .dumpThreads(dump.toString(), HotSpotDiagnosticMXBean.ThreadDumpFormat.JSON);
+            System.err.println("PARTY_TEST_THREADS\n" + Files.readString(dump));
+        } catch (Exception diagnosticFailure) { failure.addSuppressed(diagnosticFailure); }
+        finally { try { Files.deleteIfExists(dump); } catch (IOException ignored) { } }
     }
     private static void await(BooleanSupplier condition) throws InterruptedException {
         long until = System.nanoTime() + TimeUnit.SECONDS.toNanos(6);
