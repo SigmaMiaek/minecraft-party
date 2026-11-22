@@ -1,14 +1,21 @@
 # Minecraft Party website
 
-Polish landing page for the mod, served at the root of the existing Cloudflare Worker:
-https://minecraft-party.wojciechowskaola57.workers.dev/
+Polish landing page for the mod, published with GitHub Pages:
+https://sigmamiaek.github.io/minecraft-party/
+
+`.github/workflows/pages.yml` uploads `dist/` and deploys it after changes on `main`.
+The repository's **Settings → Pages → Build and deployment → Source** must be set to
+**GitHub Actions** once by a repository administrator. The workflow uses the built-in
+GitHub token; no personal access token or hosting account is needed.
 
 `dist/` is the complete deployment artifact: plain HTML, CSS, JavaScript and local assets.
 No npm dependencies, compilation, analytics, external scripts or browser requests to the
 private party-code API are needed. The existing Cloudflare Git integration can keep its
 root directory `cloudflare`, build `npm test` and deployment `npm run deploy`.
 `cloudflare/wrangler.jsonc` publishes `../website/dist`; `/health` and `/v1/*` always run
-through the API Worker first. Existing clients keep the same service URL.
+through the API Worker first. This remains a secondary copy; the canonical site and
+social image URLs point to GitHub Pages. Existing clients keep the same service URL.
+All asset paths are relative so they work under GitHub Pages' `/minecraft-party/` prefix.
 
 The lobby interaction on the page is explicitly a **demonstration**, not a live lobby.
 Its public sample code is 123456. It creates no invitations or network sessions. The
@@ -34,8 +41,9 @@ GitHub Actions installs Playwright 1.65.2 and Chromium, exercises the rendered p
 desktop/tablet/phone sizes, checks the real interactions and attaches screenshots. The
 separate Cloudflare runtime test verifies that static assets, API routing and SQLite
 directory operations work together. These tests do not verify Minecraft multiplayer.
-On pushes to `main`, `test/live.py` also checks the public HTML, JavaScript and directory
-health after allowing time for Cloudflare's independent Git deployment to finish.
+`test/live.py` checks the public HTML, JavaScript, artwork and the separate code-directory
+health. Pages deployment checks its own resulting URL; the existing CI checks Cloudflare's
+copy. Set `PARTY_WEBSITE_URL` to override which copy is checked.
 
 When releasing the mod, update the version, requirements, release and JAR links in
 `dist/index.html`, and refresh `dist/assets/social.png`. Do not publish real invitations,

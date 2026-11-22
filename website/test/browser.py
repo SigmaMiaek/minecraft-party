@@ -13,12 +13,20 @@ artifacts = root / 'artifacts'
 artifacts.mkdir(exist_ok=True)
 
 class QuietHandler(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        # A project Pages site serves assets under /minecraft-party/, not /.
+        if not self.path.startswith('/minecraft-party/'):
+            self.send_error(404)
+            return
+        self.path = self.path[len('/minecraft-party'):]
+        super().do_GET()
+
     def log_message(self, *args):
         pass
 
 server = ThreadingHTTPServer(('127.0.0.1', 0), partial(QuietHandler, directory=str(root / 'dist')))
 threading.Thread(target=server.serve_forever, daemon=True).start()
-url = f'http://127.0.0.1:{server.server_port}'
+url = f'http://127.0.0.1:{server.server_port}/minecraft-party/'
 try:
     with sync_playwright() as p:
         browser = p.chromium.launch()

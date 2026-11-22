@@ -1,6 +1,6 @@
 # Minecraft Party — prototyp 0.7.0
 
-**Strona projektu:** [Minecraft Party](https://minecraft-party.wojciechowskaola57.workers.dev/) — opis funkcji, podgląd lobby, instalacja i pobieranie. Źródła strony znajdują się w [website/](website/README.md).
+**Strona projektu:** [Minecraft Party](https://sigmamiaek.github.io/minecraft-party/) — opis funkcji, podgląd lobby, instalacja i pobieranie. Źródła strony znajdują się w [website/](website/README.md).
 
 **Pobierz:** [wydania Minecraft Party](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.7.0 jest publikowane po udanej kompilacji i testach Windows/Linux oraz katalogu kodów. [Starsze lokalne prototypy](downloads/README.md) pozostają dostępne.
 

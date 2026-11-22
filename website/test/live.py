@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Read-only checks of the public site after Cloudflare's Git auto-deployment."""
+"""Read-only checks of the public website and the separate Party code service."""
 import json
+import os
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urljoin
 
-origin = 'https://minecraft-party.wojciechowskaola57.workers.dev'
+site = os.environ.get('PARTY_WEBSITE_URL', 'https://sigmamiaek.github.io/minecraft-party/').rstrip('/') + '/'
+directory = 'https://minecraft-party.wojciechowskaola57.workers.dev/'
 
-def fetch(path):
-    request = urllib.request.Request(origin + path, headers={'User-Agent': 'MinecraftParty-Website-Check/1'})
+def fetch(url):
+    request = urllib.request.Request(url, headers={'User-Agent': 'MinecraftParty-Website-Check/1'})
     with urllib.request.urlopen(request, timeout=12) as response:
         return response.read(), response.headers
 
@@ -16,22 +19,24 @@ deadline = time.monotonic() + 180
 last_error = ''
 while True:
     try:
-        body, headers = fetch('/')
+        body, headers = fetch(site)
         assert b'Tw\xc3\xb3j \xc5\x9bwiat.' in body and b'assets/world.svg' in body, 'Public website has not updated yet'
         assert 'text/html' in headers['Content-Type']
-        assert headers['X-Content-Type-Options'] == 'nosniff'
-        script, headers = fetch('/app.js')
+        assert b'https://sigmamiaek.github.io/minecraft-party/' in body, 'Canonical site URL has not updated yet'
+        script, headers = fetch(urljoin(site, 'app.js'))
         assert b'demoStep' in script
-        health_body, health_headers = fetch('/health')
+        image, _ = fetch(urljoin(site, 'assets/world.svg'))
+        assert b'<svg' in image
+        health_body, health_headers = fetch(urljoin(directory, 'health'))
         health = json.loads(health_body)
         assert health['service'] == 'minecraft-party-codes' and health['protocol'] == 1
         assert health['autoJoin'] is True
         assert health_headers['Cache-Control'] == 'no-store'
-        print('Public website HTML, JavaScript, security headers and unchanged directory health verified:', origin)
+        print('Public website HTML, JavaScript, artwork and unchanged Party directory health verified:', site)
         break
     except (OSError, AssertionError, KeyError, ValueError) as error:
         last_error = f'{type(error).__name__}: {error}'
         if time.monotonic() >= deadline:
-            raise RuntimeError('Cloudflare publication could not be confirmed: ' + last_error)
-        print('Waiting for Cloudflare Git deployment:', last_error, flush=True)
+            raise RuntimeError('Website publication could not be confirmed: ' + last_error)
+        print('Waiting for website deployment:', last_error, flush=True)
         time.sleep(10)
