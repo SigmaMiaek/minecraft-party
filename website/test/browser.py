@@ -3,6 +3,8 @@
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import base64
+import json
 import threading
 
 from playwright.sync_api import sync_playwright, expect
@@ -25,17 +27,26 @@ try:
         page = context.new_page()
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
+        overflow = []
         for width, height in [(1440, 1000), (1024, 900), (768, 1024), (390, 844), (320, 740)]:
             page.set_viewport_size({'width': width, 'height': height})
             response = page.goto(url)
             assert response.status == 200
             page.evaluate('document.fonts.ready')
-            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), f'Overflow at {width}px'
+            if page.evaluate('document.documentElement.scrollWidth > innerWidth'):
+                offenders = page.evaluate('''[...document.querySelectorAll('body *')].filter(e => {
+                    const r=e.getBoundingClientRect(); return r.width && (r.right > innerWidth+1 || r.left < -1);
+                }).map(e => ({tag:e.tagName, cls:e.className.baseVal ?? e.className, right:Math.round(e.getBoundingClientRect().right), left:Math.round(e.getBoundingClientRect().left)})).slice(0,35)''')
+                overflow.append(width)
+                print('OVERFLOW',width,json.dumps(offenders),flush=True)
             expect(page.locator('h1')).to_contain_text('Twój świat.')
             assert page.locator('.world-art').evaluate('(img) => img.complete && img.naturalWidth > 0')
             # Reduced motion also keeps every section visible for full-page review.
             page.screenshot(path=str(artifacts / f'page-{width}.png'), full_page=True)
-            print(f'Render: {width}x{height}, assets loaded, no horizontal overflow')
+            shot = page.screenshot(type='jpeg', quality=45)
+            print(f'VISUAL_PREVIEW_{width}=' + base64.b64encode(shot).decode(),flush=True)
+            print(f'Render: {width}x{height}, assets loaded',flush=True)
+        assert not overflow, f'Horizontal overflow at widths {overflow}'
 
         page.set_viewport_size({'width': 1440, 'height': 1000})
         page.goto(url)
@@ -88,7 +99,6 @@ try:
         print('Mobile navigation, FAQ, published release target, no JavaScript errors passed')
         # Compact previews in the log allow visual review even when the remote
         # artifact downloader is unavailable. No user data is present in this demo.
-        import base64
         page.goto(url)
         for width in [1440, 390]:
             page.set_viewport_size({'width': width, 'height': 1100 if width == 1440 else 844})

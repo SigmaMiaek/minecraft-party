@@ -36,7 +36,7 @@
   }));
 
   const menu = $('.mobile-menu');
-  function closeMenu() { menu.setAttribute('aria-expanded', 'false'); $('#mobile-navigation').hidden = true; }
+  function closeMenu() { menu.setAttribute('aria-expanded', 'false'); menu.setAttribute('aria-label', 'Otwórz menu'); $('#mobile-navigation').hidden = true; }
   menu.addEventListener('click', () => {
     const open = menu.getAttribute('aria-expanded') !== 'true';
     menu.setAttribute('aria-expanded', open);
