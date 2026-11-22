@@ -11,6 +11,8 @@ export function runChecks() {
       put: (key, value, expires) => data.set(key, { value: structuredClone(value), expires }),
       del: key => data.delete(key),
       rooms: () => [...data.keys()].filter(k => k.startsWith('room:')).length,
+      list: () => [...data.entries()].filter(([key]) => key.startsWith('room:'))
+        .map(([key, entry]) => ({ code: key.slice(5), room: structuredClone(entry.value) })),
       clean: time => { for (const [k, v] of data) if (v.expires <= time) data.delete(k); }
     };
     const random = { token: () => String(next++).padStart(43, 'x'), code: () => String(next++).padStart(6, '0') };
@@ -95,6 +97,53 @@ export function runChecks() {
     rejected(() => f.call('request', { ...f.guest, code: '../123456' }), 400);
     rejected(() => f.call('request', { ...f.guest, name: 'x\nOperator' }), 400);
     rejected(() => f.call('request', { ...f.guest, tokenHash: '' }), 400);
+  });
+  const metadata = { name: 'Public Party', host: 'Host', players: 1, limit: 6, inWorld: false, minecraft: '26.2', protocol: 4 };
+  const publish = (f, extra = {}) => f.call('create', { invite: 'mp3:' + 'B'.repeat(100), expiresAt: 1500000,
+    autoJoin: true, publicLobby: true, listing: { ...metadata, ...extra } });
+  test('old and new private rooms never appear in the public directory', () => {
+    const f = fixture(true);
+    assert(f.room.publicLobby === false && f.call('list', {}).lobbies.length === 0, 'private room exposed');
+    rejected(() => f.call('host', { ...f.owner, listing: metadata, publicLobby: true }), 400);
+    assert(f.call('list', {}).lobbies.length === 0, 'private room was silently made public');
+  });
+  test('public discovery exposes only a deliberate join code and bounded metadata', () => {
+    const f = fixture(true), room = publish(f, { invite: 'secret', owner: 'secret', ip: 'secret' });
+    const visible = f.call('list', {}).lobbies;
+    assert(visible.length === 1 && visible[0].code === room.code && visible[0].name === metadata.name, 'listing missing');
+    assert(Object.keys(visible[0]).sort().join() === 'code,host,inWorld,limit,minecraft,name,players,protocol', 'secret or arbitrary field exposed');
+    assert(f.call('request', { ...f.guest, code: room.code }).status === 'approved', 'public join requires approval');
+  });
+  test('only the owner can update public counts and revocation removes the listing', () => {
+    const f = fixture(), room = publish(f), owner = { code: room.code, owner: room.owner };
+    rejected(() => f.call('host', { ...owner, owner: 'z'.repeat(43), listing: { ...metadata, players: 5 } }), 403);
+    f.call('host', { ...owner, listing: { ...metadata, players: 4, inWorld: true } });
+    assert(f.call('list', {}).lobbies[0].players === 4 && f.call('list', {}).lobbies[0].inWorld, 'metadata not refreshed');
+    f.call('remove', owner); assert(f.call('list', {}).lobbies.length === 0, 'closed room remains public');
+  });
+  test('public listings expire after a missing host heartbeat', () => {
+    const f = fixture(); publish(f); f.advance(120001);
+    assert(f.call('list', {}).lobbies.length === 0, 'stale host stays visible');
+  });
+  test('public directory uses bounded pages and never includes private entries', () => {
+    const f = fixture(); for (let i = 0; i < 3; i++) publish(f, { name: 'Room ' + i });
+    const first = f.call('list', { page: 0, size: 2 }), second = f.call('list', { page: 1, size: 2 });
+    assert(first.pages === 2 && first.lobbies.length === 2 && second.lobbies.length === 1, 'pagination');
+    assert(new Set([...first.lobbies, ...second.lobbies].map(x => x.code)).size === 3, 'duplicate or private row');
+    for (const body of [{ page: -1 }, { page: 256 }, { size: 17 }, { size: 0 }, { page: '0' }]) rejected(() => f.call('list', body), 400);
+  });
+  test('public metadata rejects formatting, invalid capacity and unsupported protocols', () => {
+    for (const extra of [{ name: 'bad\nname' }, { name: '§kHidden' }, { name: '\u202eRTL' }, { host: 'x y' },
+      { players: 0 }, { players: 9 }, { limit: 1 }, { protocol: 3 }, { minecraft: 'other' }, { inWorld: 'yes' }])
+      rejected(() => publish(fixture(), extra), 400);
+    for (const publicLobby of ['true', null, 1]) {
+      const f = fixture();
+      rejected(() => f.call('create', { invite: 'mp3:' + 'B'.repeat(100), expiresAt: 1500000, publicLobby }), 400);
+    }
+  });
+  test('public list requests are rate limited', () => {
+    const f = fixture(); for (let i = 0; i < 60; i++) f.call('list', {});
+    rejected(() => f.call('list', {}), 429);
   });
   return passed;
 }

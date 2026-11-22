@@ -49,6 +49,10 @@ public final class HostNode implements AutoCloseable {
                     InetAddress bind, Consumer<LobbyState> onState) throws GeneralSecurityException, IOException {
         this(new LobbyModel(hostId, hostName, name, limit), hostId, candidates, bind, onState);
     }
+    public HostNode(UUID hostId, String hostName, String name, int limit, boolean publicLobby, List<String> candidates,
+                    InetAddress bind, Consumer<LobbyState> onState) throws GeneralSecurityException, IOException {
+        this(new LobbyModel(hostId, hostName, name, limit, publicLobby), hostId, candidates, bind, onState);
+    }
     public static HostNode successor(LeadershipPlan plan, List<String> candidates, InetAddress bind, Consumer<LobbyState> onState)
             throws GeneralSecurityException, IOException {
         return new HostNode(LobbyModel.restore(plan), plan.successor(), candidates, bind, onState);

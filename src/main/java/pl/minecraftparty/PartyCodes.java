@@ -44,19 +44,23 @@ public final class PartyCodes {
             if (Invite.decode(manager.invite()).expiresAt() - System.currentTimeMillis() < 60000) { manager.rotateInvite(); return; }
         } catch (java.io.IOException e) { manager.rotateInvite(); return; }
         int operation = epoch; String url = manager.config.codeServiceUrl, invite = manager.invite();
+        var snapshot = manager.state();
         var current = room; working = true; next = System.nanoTime() + 10_000_000_000L;
         manager.background(() -> {
             try (var service = new ShortCodeClient(url)) {
-                var registered = current == null ? service.create(invite) : current;
-                var requests = service.pollHost(registered);
+                var registered = current == null ? service.create(invite, snapshot) : current;
+                var requests = current == null ? List.<ShortCodeClient.Pending>of() : service.pollHost(registered, snapshot);
                 client.execute(() -> {
                     if (epoch != operation) { if (current == null) manager.background(() -> remove(url, registered)); return; }
                     room = registered; roomUrl = url; pending = requests; working = false;
+                    if (current == null && snapshot != null && snapshot.publicLobby()) manager.message("public_published");
                 });
             } catch (Exception e) {
                 client.execute(() -> {
                     if (epoch != operation) return;
-                    working = false; pending = List.of(); room = null;
+                    working = false; pending = List.of();
+                    // Preserve the owner's capability on transient failures rather than creating duplicate public ads.
+                    if (e instanceof ShortCodeClient.Failure f && f.key().equals("codes_expired")) room = null;
                     manager.message(e instanceof ShortCodeClient.Failure f ? f.key() : "codes_unavailable");
                 });
             }

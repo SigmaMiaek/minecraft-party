@@ -4,13 +4,25 @@ export class RegistryError extends Error {
 }
 const fail = status => { throw new RegistryError(status); };
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/;
+function listing(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+      || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 40
+      || /[\p{Cc}\p{Cf}\p{Cs}\u00a7]/u.test(value.name)
+      || typeof value.host !== 'string' || !/^[A-Za-z0-9_]{1,16}$/.test(value.host)
+      || !Number.isSafeInteger(value.limit) || value.limit < 2 || value.limit > 8
+      || !Number.isSafeInteger(value.players) || value.players < 1 || value.players > value.limit
+      || typeof value.inWorld !== 'boolean' || value.minecraft !== '26.2' || value.protocol !== 4) fail(400);
+  // Copy only the deliberately public fields; never retain arbitrary client keys.
+  return { name: value.name, host: value.host, players: value.players, limit: value.limit,
+    inWorld: value.inWorld, minecraft: '26.2', protocol: 4 };
+}
 export class Registry {
   constructor(store, random, now = () => Date.now()) {
     this.store = store; this.random = random; this.now = now;
   }
   rate(ip, action) {
     const minute = Math.floor(this.now() / 60000);
-    const limit = { create: 5, request: 10, poll: 90, host: 90, decide: 30, remove: 30 }[action];
+    const limit = { create: 5, request: 10, poll: 90, host: 90, decide: 30, remove: 30, list: 60 }[action];
     if (!limit) fail(404);
     for (const [key, maximum] of [[`rate:${minute}:all`, 600], [`rate:${minute}:${ip}:${action}`, limit]]) {
       const count = this.store.get(key) || 0;
@@ -22,9 +34,21 @@ export class Registry {
     this.store.clean(this.now());
     this.rate(ip, action);
     const now = this.now();
+    if (action === 'list') {
+      const page = body.page ?? 0, size = body.size ?? 8;
+      if (!Number.isSafeInteger(page) || page < 0 || page > 255 || !Number.isSafeInteger(size) || size < 1 || size > 16) fail(400);
+      const rooms = this.store.list().filter(entry => entry.room.publicLobby === true && entry.room.expiresAt > now
+          && entry.room.listing && entry.room.autoJoin === true).sort((a, b) => a.code.localeCompare(b.code));
+      return { publicLobbies: true, page, pages: Math.max(1, Math.ceil(rooms.length / size)),
+        lobbies: rooms.slice(page * size, (page + 1) * size).map(entry => ({ code: entry.code, ...entry.room.listing })) };
+    }
     if (action === 'create') {
       if (typeof body.invite !== 'string' || !/^mp3:[A-Za-z0-9_-]{20,4092}$/.test(body.invite)
           || !Number.isSafeInteger(body.expiresAt) || body.expiresAt <= now || body.expiresAt > now + 3600000) fail(400);
+      if (body.publicLobby !== undefined && typeof body.publicLobby !== 'boolean') fail(400);
+      const publicLobby = body.publicLobby === true;
+      if (publicLobby && body.autoJoin !== true) fail(400);
+      const metadata = publicLobby ? listing(body.listing) : null;
       if (this.store.rooms() >= 256) fail(503);
       let code;
       for (let attempt = 0; attempt < 20; attempt++) {
@@ -33,9 +57,10 @@ export class Registry {
       }
       if (!code) fail(503);
       const room = { owner: this.random.token(), invite: body.invite, hardExpiry: body.expiresAt,
-        autoJoin: body.autoJoin === true, expiresAt: Math.min(body.expiresAt, now + 120000), requests: [] };
+        autoJoin: body.autoJoin === true, publicLobby, listing: metadata,
+        expiresAt: Math.min(body.expiresAt, now + 120000), requests: [] };
       this.save(code, room);
-      return { code, owner: room.owner, expiresAt: room.expiresAt, autoJoin: room.autoJoin };
+      return { code, owner: room.owner, expiresAt: room.expiresAt, autoJoin: room.autoJoin, publicLobby };
     }
     if (typeof body.code !== 'string' || !/^\d{6}$/.test(body.code)) fail(400);
     const room = this.store.get('room:' + body.code);
@@ -44,6 +69,10 @@ export class Registry {
     if (['host', 'decide', 'remove'].includes(action)) {
       if (!tokenPattern.test(body.owner || '') || body.owner !== room.owner) fail(403);
       if (action === 'remove') { this.store.del('room:' + body.code); return { status: 'removed' }; }
+      if (action === 'host' && body.listing !== undefined) {
+        if (room.publicLobby !== true) fail(400);
+        room.listing = listing(body.listing);
+      }
       if (action === 'decide') {
         const request = room.requests.find(r => r.id === body.id && r.status === 'pending');
         if (!request || typeof body.allow !== 'boolean') fail(404);

@@ -1,5 +1,7 @@
 # Usługa kodów Minecraft Party
 
+Od 0.8.0 `POST /v1/list` udostępnia wyłącznie lobby jawnie utworzone jako publiczne. Nowe i starsze pokoje są domyślnie prywatne. Publiczny wpis zawiera kod dołączenia, nazwę, deklarowanego hosta, liczbę miejsc i status gry; bez zaproszenia mp3, właścicielskiego tokenu i adresów połączeń. Tylko właściciel odnawia wpis i zmienia metadane. Lista ma stronicowanie oraz limity, a wpisy wygasają po 120 sekundach bez heartbeat. `/health` sygnalizuje `publicLobbies: true`. Nie jest wymagana nowa migracja bazy: dotychczasowe rekordy pozostają prywatne.
+
 Kod do wdrożenia w Cloudflare Workers Free. Durable Object z backendem SQLite jest tworzony przez migrację w `wrangler.jsonc`. Nie jest potrzebny osobny VPS, domena, baza D1 ani token w modzie. Instrukcja po polsku: [docs/CLOUDFLARE.md](../docs/CLOUDFLARE.md).
 
 Ten sam Worker publikuje teraz stronę moda z `../website/dist`. Katalog `cloudflare` i dotychczasowe komendy wdrożenia pozostają poprawne. Główny adres `/` wyświetla stronę, a `/health` i `/v1/*` mają pierwszeństwo przed zasobami statycznymi i nadal obsługują usługę kodów. Nie zmieniaj adresu usługi w modzie. [Źródła i podgląd strony](../website/README.md).

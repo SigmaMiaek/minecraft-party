@@ -12,6 +12,17 @@ final class LeadershipTest {
         model.join(b, "Bob", model.inviteSecret(), ""); model.join(c, "Carol", model.inviteSecret(), "");
         model.chat(a, "Keep this conversation"); return model;
     }
+    @Test void privateIsDefaultAndPublicVisibilitySurvivesWireAndLeadershipHandoff() throws Exception {
+        assertFalse(lobby().snapshot().publicLobby());
+        var original = new LobbyModel(a, "Alice", "Public", 6, true);
+        original.join(b, "Bob", original.inviteSecret(), "");
+        var plan = plan(original, true);
+        var bytes = new ByteArrayOutputStream(); LeadershipPacket.write(new DataOutputStream(bytes), new LeadershipPacket.Prepare(plan));
+        var input = new DataInputStream(new ByteArrayInputStream(bytes.toByteArray()));
+        var decoded = (LeadershipPacket.Prepare) LeadershipPacket.read(input.readUnsignedByte(), input);
+        assertTrue(decoded.plan().snapshot().publicLobby());
+        assertTrue(LobbyModel.restore(decoded.plan()).snapshot().publicLobby());
+    }
     private LeadershipPlan plan(LobbyModel model, boolean leaving) {
         var keys = new HashMap<>(model.migrationCredentials()); keys.remove(b);
         if (!leaving) keys.put(a, Secrets.token());

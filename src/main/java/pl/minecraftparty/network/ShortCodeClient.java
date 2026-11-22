@@ -10,12 +10,15 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.*;
 
-/** Optional HTTPS directory. It is trusted with invitations; six digits alone never authorize release. */
+/** HTTPS directory trusted with invitations. Private codes are access credentials; public codes are discoverable. */
 public final class ShortCodeClient implements AutoCloseable {
     public record Registration(String code, String owner, long expiresAt) {
         @Override public String toString() { return "Registration[REDACTED]"; }
     }
     public record Pending(String id, String name, String check) { }
+    public record PublicPage(int page, int pages, List<PublicParty> lobbies) {
+        public PublicPage { lobbies = List.copyOf(lobbies); }
+    }
     public record Result(String status, String check, String invite) {
         @Override public String toString() { return "Result[REDACTED]"; }
     }
@@ -40,21 +43,36 @@ public final class ShortCodeClient implements AutoCloseable {
     public static boolean isCode(String value) { return value != null && value.strip().matches("[0-9]{6}"); }
     public static String token() { byte[] bytes = new byte[32]; new SecureRandom().nextBytes(bytes); return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes); }
     public Registration create(String invite) throws IOException {
+        return create(invite, null);
+    }
+    public Registration create(String invite, LobbyState state) throws IOException {
         Invite parsed = Invite.decode(invite); if (!parsed.relay()) throw new Failure("codes_relay_only");
         JsonObject body = new JsonObject(); body.addProperty("invite", invite); body.addProperty("expiresAt", parsed.expiresAt());
         body.addProperty("autoJoin", true);
+        boolean publicLobby = state != null && state.publicLobby();
+        body.addProperty("publicLobby", publicLobby);
+        if (publicLobby) body.add("listing", listing(state));
         JsonObject response = call("create", body);
         String code = string(response, "code", "[0-9]{6}"), owner = string(response, "owner", "[A-Za-z0-9_-]{43}");
         if (!response.has("autoJoin") || !response.get("autoJoin").getAsBoolean()) {
             try { remove(new Registration(code, owner, 0)); } catch (IOException ignored) { }
             throw new Failure("codes_update_required");
         }
+        if (publicLobby && (!response.has("publicLobby") || !response.get("publicLobby").getAsBoolean())) {
+            try { remove(new Registration(code, owner, 0)); } catch (IOException ignored) { }
+            throw new Failure("public_update_required");
+        }
         long expiry = response.get("expiresAt").getAsLong();
         if (expiry <= System.currentTimeMillis()) throw new Failure("codes_unavailable");
         return new Registration(code, owner, expiry);
     }
     public List<Pending> pollHost(Registration room) throws IOException {
-        JsonObject response = call("host", owner(room));
+        return pollHost(room, null);
+    }
+    public List<Pending> pollHost(Registration room, LobbyState state) throws IOException {
+        JsonObject body = owner(room);
+        if (state != null && state.publicLobby()) body.add("listing", listing(state));
+        JsonObject response = call("host", body);
         var array = response.getAsJsonArray("pending");
         if (array == null || array.size() > 12) throw new Failure("codes_unavailable");
         var pending = new ArrayList<Pending>();
@@ -64,6 +82,55 @@ public final class ShortCodeClient implements AutoCloseable {
                     string(item, "name", "[A-Za-z0-9_]{1,16}"), string(item, "check", "[0-9]{6}")));
         }
         return List.copyOf(pending);
+    }
+    private static JsonObject listing(LobbyState state) {
+        JsonObject json = new JsonObject();
+        json.addProperty("name", state.name());
+        json.addProperty("host", state.members().stream().filter(LobbyState.Member::host).findFirst().orElseThrow().name());
+        json.addProperty("players", state.members().size()); json.addProperty("limit", state.limit());
+        json.addProperty("inWorld", state.worldId() != null);
+        json.addProperty("minecraft", "26.2"); json.addProperty("protocol", 4);
+        return json;
+    }
+    public PublicPage list(int page, int size) throws IOException {
+        if (page < 0 || page > 255 || size < 1 || size > 16) throw new IllegalArgumentException("page");
+        JsonObject body = new JsonObject(); body.addProperty("page", page); body.addProperty("size", size);
+        return parsePublicPage(call("list", body), page, size);
+    }
+    static PublicPage parsePublicPage(JsonObject response, int page, int size) throws Failure {
+        try {
+            if (!flag(response, "publicLobbies")) throw new Failure("public_update_required");
+            int returnedPage = integer(response, "page"), pages = integer(response, "pages");
+            JsonArray rows = response.getAsJsonArray("lobbies");
+            if (returnedPage != page || pages < 1 || pages > 256 || rows == null || rows.size() > size
+                    || page >= pages && !rows.isEmpty()) throw new IllegalArgumentException("page");
+            List<PublicParty> result = new ArrayList<>(); Set<String> codes = new HashSet<>();
+            for (JsonElement entry : rows) {
+                JsonObject item = entry.getAsJsonObject();
+                if (!text(item, "minecraft").equals("26.2") || integer(item, "protocol") != 4) throw new IllegalArgumentException("version");
+                PublicParty lobby = new PublicParty(text(item, "code"), text(item, "name"), text(item, "host"),
+                        integer(item, "players"), integer(item, "limit"), flag(item, "inWorld"));
+                if (!codes.add(lobby.code())) throw new IllegalArgumentException("duplicate code");
+                result.add(lobby);
+            }
+            return new PublicPage(page, pages, result);
+        } catch (Failure e) { throw e; }
+        catch (RuntimeException e) { throw new Failure("public_unavailable"); }
+    }
+    private static String text(JsonObject item, String key) {
+        JsonPrimitive value = item.getAsJsonPrimitive(key);
+        if (!value.isString()) throw new IllegalArgumentException("text");
+        return value.getAsString();
+    }
+    private static int integer(JsonObject item, String key) {
+        JsonPrimitive value = item.getAsJsonPrimitive(key);
+        if (!value.isNumber()) throw new IllegalArgumentException("number");
+        return value.getAsBigDecimal().intValueExact();
+    }
+    private static boolean flag(JsonObject item, String key) {
+        JsonPrimitive value = item.getAsJsonPrimitive(key);
+        if (!value.isBoolean()) throw new IllegalArgumentException("boolean");
+        return value.getAsBoolean();
     }
     public void decide(Registration room, String id, boolean allow) throws IOException {
         JsonObject body = owner(room); body.addProperty("id", id); body.addProperty("allow", allow); call("decide", body);
@@ -86,12 +153,13 @@ public final class ShortCodeClient implements AutoCloseable {
     private JsonObject call(String action, JsonObject body) throws IOException {
         try {
             var request = HttpRequest.newBuilder(endpoint.resolve("/v1/" + action)).timeout(Duration.ofSeconds(5))
-                    .header("User-Agent", "MinecraftParty/0.7.1 (+https://github.com/SigmaMiaek/minecraft-party)")
+                    .header("User-Agent", "MinecraftParty/0.8.0 (+https://github.com/SigmaMiaek/minecraft-party)")
                     .header("Content-Type", "application/json").header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body.toString())).build();
             var response = http.send(request, info -> new LimitedHttpBody(16384));
             if (response.statusCode() != 200) throw new Failure(switch (response.statusCode()) {
-                case 404 -> "codes_expired"; case 429 -> "codes_rate"; default -> "codes_unavailable";
+                case 404 -> action.equals("list") ? "public_update_required" : "codes_expired";
+                case 429 -> "codes_rate"; default -> "codes_unavailable";
             });
             return JsonParser.parseString(new String(response.body(), StandardCharsets.UTF_8)).getAsJsonObject();
         } catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new Failure("codes_unavailable"); }

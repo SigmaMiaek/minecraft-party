@@ -1,5 +1,9 @@
 # Sześciocyfrowe kody przez Cloudflare — 0.6.0
 
+## Publiczne lobby w 0.8.0
+
+Wdróż aktualny Worker z `main` przez istniejącą integrację Git. `/health` zawiera teraz `"publicLobbies":true`. Adres, wiązanie Durable Object i migracja pozostają te same. Nowy `POST /v1/list` pokazuje tylko jawnie publiczne Party; starsze i nowe prywatne pokoje nie są publikowane. Metadane listy są deklaracją hosta. Wpis znika po usunięciu przez właściciela lub po maksymalnie około dwóch minutach bez udanego heartbeat. Widoczność jest wybierana przy tworzeniu i nie jest zapisywana jako domyślna na przyszłość. Do nowego protokołu lobby wymagane jest 0.8.0 u wszystkich uczestników.
+
 ## Wdrożenie bez instalowania narzędzi na komputerze
 
 1. Załóż konto na <https://dash.cloudflare.com/sign-up> i potwierdź e-mail. Pozostań przy **Workers Free**; nie dodawaj domeny ani płatnego planu.

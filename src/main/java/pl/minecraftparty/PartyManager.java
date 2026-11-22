@@ -110,6 +110,9 @@ public final class PartyManager {
         if (host != null && permissions.available()) permissions.setOperator(id, !permissions.operator(id));
     }
     public void create(String name, int limit) {
+        create(name, limit, false);
+    }
+    public void create(String name, int limit, boolean publicLobby) {
         if (active()) return;
         waitForMenuBeforeSharing = false;
         config.networkMode = PartyConfig.NetworkMode.RELAY;
@@ -123,11 +126,12 @@ public final class PartyManager {
         background(() -> {
             HostNode node = null; InternetExposure exposure = null; E4mcRelay relay = null;
             try {
+                if (publicLobby) try (var service = new ShortCodeClient(config.codeServiceUrl)) { service.list(0, 1); }
                 config.save();
                 java.util.function.Consumer<LobbyState> updated = next -> client.execute(() -> {
                     if (generation == operation) state = next;
                 });
-                node = relayed ? new HostNode(id, username, name, limit, java.util.List.of("127.0.0.1"),
+                node = relayed ? new HostNode(id, username, name, limit, publicLobby, java.util.List.of("127.0.0.1"),
                         java.net.InetAddress.getByName("127.0.0.1"), updated) : new HostNode(id, username, name, limit, updated);
                 if (relayed) {
                     client.execute(() -> { if (generation == operation) message = "preparing_relay"; });
@@ -156,9 +160,10 @@ public final class PartyManager {
                 });
             } catch (Exception e) {
                 if (node != null) node.close(); if (exposure != null) exposure.close(); if (relay != null) relay.close();
-                String type = e instanceof E4mcRelay.Failure failure ? failure.key() : e.getClass().getSimpleName();
+                String type = e instanceof ShortCodeClient.Failure failure ? failure.key()
+                        : e instanceof E4mcRelay.Failure failure ? failure.key() : e.getClass().getSimpleName();
                 client.execute(() -> { if (generation == operation) setupError = type; });
-                failed(operation, e instanceof E4mcRelay.Failure failure ? failure.key()
+                failed(operation, e instanceof ShortCodeClient.Failure failure ? failure.key() : e instanceof E4mcRelay.Failure failure ? failure.key()
                         : relayed ? "relay_unavailable" : internet ? "internet_unavailable" : "create_failed");
             }
         });

@@ -3,5 +3,5 @@ import assert from 'node:assert/strict';
 import { runChecks } from './checks.mjs';
 
 test('directory authorization, expiry, collisions and abuse limits', () => {
-  assert.equal(runChecks().length, 14);
+  assert.equal(runChecks().length, 21);
 });

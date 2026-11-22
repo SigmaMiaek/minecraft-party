@@ -18,7 +18,7 @@ public final class PartyScreen extends Screen {
     private int limit, page, tab;
     private String layoutKey = "";
     private int left, contentWidth, top, bottom, playersWidth, settingsWidth, chatX, chatWidth, settingsX;
-    private boolean wide;
+    private boolean wide, publicLobby, wasActive;
     private EditBox name;
     private int formX, formWidth, nameLabelY, codeLabelY, digitsY;
     private PartyChat chat;
@@ -44,7 +44,7 @@ public final class PartyScreen extends Screen {
         eye = null; leadershipButtons.clear();
         button("back", width - 76, 7, 68, this::onClose);
         button("diagnostics.open", 8, 7, 84, () -> minecraft.gui.setScreen(new NetworkDiagnosticsScreen(this)));
-        if (!manager.active()) initCreate();
+        if (!manager.active()) { if (wasActive) publicLobby = false; initCreate(); }
         else {
             if (!wide) {
                 top = 71;
@@ -65,7 +65,7 @@ public final class PartyScreen extends Screen {
                     chatX, top, chatWidth, bottom - top, chatDraft, value -> chatDraft = value, this::setFocused);
             if (wide || tab == 2) initSettings();
         }
-        layoutKey = layoutKey(); updateButtons();
+        wasActive = manager.active(); layoutKey = layoutKey(); updateButtons();
     }
     private void initCreate() {
         formWidth = Math.min(380, contentWidth - 16); formX = (width - formWidth) / 2;
@@ -79,11 +79,16 @@ public final class PartyScreen extends Screen {
         });
         capacity.setMessage(tr("limit", limit));
         int createY = nameY + 26;
-        create = button("create", formX, createY, formWidth, () -> manager.create(draftName.strip(), limit));
+        create = button("create", formX, createY, formWidth - 136, () -> manager.create(draftName.strip(), limit, publicLobby));
+        Button visibility = button(publicLobby ? "visibility.public" : "visibility.private", formX + formWidth - 130, createY, 130,
+                () -> { publicLobby = !publicLobby; rebuildWidgets(); });
+        visibility.setTooltip(Tooltip.create(tr(publicLobby ? "visibility.public_hint" : "visibility.private_hint")));
         codeLabelY = createY + (compact ? 32 : 42); digitsY = codeLabelY + 15;
         new PartyCodeInput(font, this::addRenderableWidget, this::setFocused, draftDigits, this::updateButtons,
                 this::joinParty, (width - PartyCodeInput.WIDTH) / 2, digitsY);
-        join = button("join", formX, digitsY + PartyCodeInput.BOX + (compact ? 7 : 14), formWidth, this::joinParty);
+        int joinY = digitsY + PartyCodeInput.BOX + (compact ? 7 : 14);
+        join = button("join", formX, joinY, formWidth - 136, this::joinParty);
+        button("public.browse", formX + formWidth - 130, joinY, 130, () -> minecraft.gui.setScreen(new PublicPartiesScreen(this)));
     }
     private void joinParty() { if (!manager.busy() && draftDigits.complete()) manager.join(draftDigits.value()); }
     private int rows() { return Math.max(1, (bottom - top - 54) / 26); }
@@ -180,7 +185,7 @@ public final class PartyScreen extends Screen {
         centered(graphics, font, title, width, 12, 0xFFFFFFFF);
         LobbyState state = manager.state();
         centered(graphics, font, !manager.codes.check().isEmpty() && manager.host() == null ? tr("codes.check", manager.codes.check())
-                : state == null ? tr("subtitle") : Component.literal(state.name()), width, 29, 0xFFAAAAAA);
+                : state == null ? tr("subtitle") : Component.literal(state.name()).append(" · ").append(tr(state.publicLobby() ? "visibility.public" : "visibility.private")), width, 29, 0xFFAAAAAA);
         if (!manager.active()) {
             text(graphics, font, tr("name"), formX, nameLabelY, 0xFFFFFFFF, formWidth);
             text(graphics, font, tr("code.label"), formX, codeLabelY, 0xFFFFFFFF, formWidth);

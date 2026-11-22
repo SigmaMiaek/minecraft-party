@@ -69,6 +69,21 @@ with tempfile.TemporaryFile(mode='w+') as log:
         immediate = call('request', {'code': auto['code'], 'name': 'DirectJoin', 'requestToken': secrets.token_urlsafe(32)})
         assert immediate['status'] == 'approved' and immediate['invite'] == invite
         call('remove', {'code': auto['code'], 'owner': auto['owner']})
+        assert call('health')['publicLobbies'] is True
+        assert call('list', {})['lobbies'] == []
+        metadata = {'name': 'Public Party', 'host': 'Host', 'players': 1, 'limit': 6,
+                    'inWorld': False, 'minecraft': '26.2', 'protocol': 4}
+        public = call('create', {'invite': invite, 'expiresAt': int(time.time() * 1000) + 300000,
+                                'autoJoin': True, 'publicLobby': True, 'listing': metadata})
+        rows = call('list', {})['lobbies']
+        assert len(rows) == 1 and rows[0]['code'] == public['code']
+        assert set(rows[0]) == set(metadata) | {'code'}
+        owner = {'code': public['code'], 'owner': public['owner']}
+        call('host', {**owner, 'owner': secrets.token_urlsafe(32), 'listing': metadata}, 403)
+        call('host', {**owner, 'listing': {**metadata, 'players': 3, 'inWorld': True}})
+        assert call('list', {})['lobbies'][0]['players'] == 3
+        call('remove', owner)
+        assert call('list', {})['lobbies'] == []
         print('Real Worker + SQLite: website assets, health, approval, auto-join, capability isolation and revocation passed.')
     except Exception:
         # Avoid logging request bodies/capabilities, including from Wrangler request logs.

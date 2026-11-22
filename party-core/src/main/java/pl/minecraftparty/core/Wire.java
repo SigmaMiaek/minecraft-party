@@ -5,7 +5,7 @@ import java.util.*;
 
 /** Bounded, versioned binary protocol; no Java deserialization or remote class names. */
 final class Wire {
-    static final int MAGIC = 0x4d505433; // MPT3: authenticated leadership handoff.
+    static final int MAGIC = 0x4d505434; // MPT4: visibility survives snapshots and leadership handoff.
     static final int CONTROL = 1, TUNNEL = 2;
     static final int WELCOME = 1, SNAPSHOT = 2, ERROR = 3;
     static final int PING = 1, STATUS = 2, LEAVE = 3, CHAT = 4;
@@ -24,6 +24,7 @@ final class Wire {
     }
     static void snapshot(DataOutput out, LobbyState state) throws IOException {
         uuid(out, state.partyId()); out.writeUTF(state.name()); out.writeInt(state.limit()); out.writeLong(state.revision());
+        out.writeBoolean(state.publicLobby());
         out.writeBoolean(state.worldId() != null);
         if (state.worldId() != null) uuid(out, state.worldId());
         out.writeBoolean(state.multiplayerTarget() != null);
@@ -40,6 +41,7 @@ final class Wire {
     }
     static LobbyState snapshot(DataInput in) throws IOException {
         UUID id = uuid(in); String name = text(in, 40); int limit = in.readInt(); long revision = in.readLong();
+        boolean publicLobby = in.readBoolean();
         UUID world = in.readBoolean() ? uuid(in) : null;
         MultiplayerTarget target = null;
         if (in.readBoolean()) {
@@ -70,7 +72,7 @@ final class Wire {
             catch (IllegalArgumentException e) { throw new IOException("chat text", e); }
             chat.add(new LobbyState.ChatMessage(sequence, sender, senderName, message)); previousSequence = sequence;
         }
-        return new LobbyState(id, name, limit, revision, world, target, members, chat);
+        return new LobbyState(id, name, limit, revision, world, target, members, chat, publicLobby);
     }
     static LobbyState.Status status(DataInput in) throws IOException {
         int value = in.readUnsignedByte();

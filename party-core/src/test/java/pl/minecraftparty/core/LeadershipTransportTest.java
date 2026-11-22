@@ -18,7 +18,7 @@ final class LeadershipTransportTest {
         AtomicReference<GuestNode> bobClient = new AtomicReference<>(), carolMoved = new AtomicReference<>();
         AtomicReference<LeadershipPacket.Ready> ready = new AtomicReference<>();
         AtomicReference<Throwable> failure = new AtomicReference<>();
-        try (HostNode old = new HostNode(alice, "Alice", "Friends", 4, List.of("127.0.0.1"), InetAddress.getByName("127.0.0.1"), s -> {})) {
+        try (HostNode old = new HostNode(alice, "Alice", "Friends", 4, true, List.of("127.0.0.1"), InetAddress.getByName("127.0.0.1"), s -> {})) {
             old.leadershipListener(event -> { if (event.packet() instanceof LeadershipPacket.Ready packet) ready.set(packet); });
             try (GuestNode bobGuest = new GuestNode(old.invite(), bob, "Bob", "", s -> {}, s -> {}, packet -> {
                 try {
@@ -43,6 +43,7 @@ final class LeadershipTransportTest {
                 await(() -> carolMoved.get() != null && carolMoved.get().connected());
                 old.close();
                 assertEquals(plan.snapshot().partyId(), nextHost.get().snapshot().partyId());
+                assertTrue(nextHost.get().snapshot().publicLobby());
                 assertEquals(Set.of(bob, carol), nextHost.get().snapshot().members().stream().map(LobbyState.Member::id).collect(java.util.stream.Collectors.toSet()));
                 assertEquals("Persistent chat", nextHost.get().snapshot().chat().getFirst().text());
                 assertTrue(carolMoved.get().connected());

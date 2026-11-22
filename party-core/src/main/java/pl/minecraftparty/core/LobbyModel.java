@@ -14,6 +14,7 @@ public final class LobbyModel {
     private final UUID hostId;
     private final String name;
     private final int limit;
+    private boolean publicLobby;
     private final Clock clock;
     private final LinkedHashMap<UUID, Entry> entries = new LinkedHashMap<>();
     private final Set<UUID> banned = new HashSet<>();
@@ -28,6 +29,10 @@ public final class LobbyModel {
 
     public LobbyModel(UUID hostId, String hostName, String name, int limit) {
         this(hostId, hostName, name, limit, Clock.systemUTC());
+    }
+    public LobbyModel(UUID hostId, String hostName, String name, int limit, boolean publicLobby) {
+        this(hostId, hostName, name, limit);
+        this.publicLobby = publicLobby;
     }
     LobbyModel(UUID hostId, String hostName, String name, int limit, Clock clock) {
         this(UUID.randomUUID(), hostId, hostName, name, limit, clock);
@@ -46,6 +51,7 @@ public final class LobbyModel {
         LobbyState state = plan.snapshot();
         var leader = state.members().stream().filter(m -> m.id().equals(plan.successor())).findFirst().orElseThrow();
         var model = new LobbyModel(state.partyId(), leader.id(), leader.name(), state.name(), state.limit(), Clock.systemUTC());
+        model.publicLobby = state.publicLobby();
         model.entries.clear();
         for (var member : state.members()) {
             if (plan.leaving() && member.host()) continue;
@@ -135,7 +141,7 @@ public final class LobbyModel {
     public synchronized LobbyState snapshot() {
         expireDisconnected();
         return new LobbyState(partyId, name, limit, revision, worldId, multiplayerTarget, entries.entrySet().stream()
-                .map(e -> new LobbyState.Member(e.getKey(), e.getValue().name, e.getKey().equals(hostId), e.getValue().status)).toList(), List.copyOf(chat));
+                .map(e -> new LobbyState.Member(e.getKey(), e.getValue().name, e.getKey().equals(hostId), e.getValue().status)).toList(), List.copyOf(chat), publicLobby);
     }
     synchronized String inviteSecret() { return inviteSecret; }
     synchronized long inviteExpires() { return inviteExpires; }

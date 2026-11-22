@@ -19,8 +19,8 @@ const random = {
 export default {
   async fetch(request, env) {
     if (request.method === 'GET' && new URL(request.url).pathname === '/health')
-      return reply({ service: 'minecraft-party-codes', protocol: 1, autoJoin: true });
-    if (request.method !== 'POST' || !/^\/v1\/(create|request|poll|host|decide|remove)$/.test(new URL(request.url).pathname))
+      return reply({ service: 'minecraft-party-codes', protocol: 1, autoJoin: true, publicLobbies: true });
+    if (request.method !== 'POST' || !/^\/v1\/(create|request|poll|host|decide|remove|list)$/.test(new URL(request.url).pathname))
       return reply({ error: 'not_found' }, 404);
     if (request.headers.has('Origin')) return reply({ error: 'forbidden' }, 403);
     const length = Number(request.headers.get('Content-Length'));
@@ -59,6 +59,8 @@ export class PartyDirectory extends DurableObject {
       put: (key, value, expiry) => this.sql.exec('INSERT OR REPLACE INTO entries VALUES (?, ?, ?)', key, JSON.stringify(value), expiry),
       del: key => this.sql.exec('DELETE FROM entries WHERE key = ?', key),
       rooms: () => [...this.sql.exec("SELECT count(*) AS count FROM entries WHERE key LIKE 'room:%'")][0].count,
+      list: () => [...this.sql.exec("SELECT key, value FROM entries WHERE key LIKE 'room:%' LIMIT 256")]
+        .map(row => ({ code: row.key.slice(5), room: JSON.parse(row.value) })),
       clean: now => this.sql.exec('DELETE FROM entries WHERE expires <= ?', now)
     }, random);
   }
