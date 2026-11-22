@@ -35,6 +35,20 @@ with tempfile.TemporaryFile(mode='w+') as log:
                 if process.poll() is not None or time.monotonic() >= deadline:
                     raise RuntimeError('Wrangler runtime failed to start')
                 time.sleep(1)
+        # Static assets share the Worker origin with the code directory. These
+        # requests must never swallow /health or POST /v1/* below.
+        for asset, content_type, marker in [
+            ('/', 'text/html', b'Minecraft Party'),
+            ('/app.js', 'javascript', b'demoStep'),
+            ('/styles.css', 'text/css', b'Figtree'),
+            ('/assets/world.svg', 'image/svg+xml', b'<svg'),
+        ]:
+            with urllib.request.urlopen('http://127.0.0.1:8787' + asset, timeout=5) as response:
+                assert response.status == 200
+                assert content_type in response.headers['Content-Type']
+                assert marker in response.read()
+                assert response.headers['X-Content-Type-Options'] == 'nosniff'
+        assert call('health')['protocol'] == 1
         invite = 'mp3:' + 'A' * 100  # opaque test payload; this does not simulate a Minecraft session
         registered = call('create', {'invite': invite, 'expiresAt': int(time.time() * 1000) + 300000})
         owner = {'code': registered['code'], 'owner': registered['owner']}
@@ -55,7 +69,7 @@ with tempfile.TemporaryFile(mode='w+') as log:
         immediate = call('request', {'code': auto['code'], 'name': 'DirectJoin', 'requestToken': secrets.token_urlsafe(32)})
         assert immediate['status'] == 'approved' and immediate['invite'] == invite
         call('remove', {'code': auto['code'], 'owner': auto['owner']})
-        print('Real Worker + SQLite Durable Object: health, approval, capability isolation and revocation passed.')
+        print('Real Worker + SQLite: website assets, health, approval, auto-join, capability isolation and revocation passed.')
     except Exception:
         # Avoid logging request bodies/capabilities, including from Wrangler request logs.
         raise
