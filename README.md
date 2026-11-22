@@ -1,5 +1,7 @@
 # Minecraft Party — prototyp 0.7.0
 
+**Strona projektu:** [Minecraft Party](https://minecraft-party.wojciechowskaola57.workers.dev/) — opis funkcji, podgląd lobby, instalacja i pobieranie. Źródła strony znajdują się w [website/](website/README.md).
+
 **Pobierz:** [wydania Minecraft Party](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.7.0 jest publikowane po udanej kompilacji i testach Windows/Linux oraz katalogu kodów. [Starsze lokalne prototypy](downloads/README.md) pozostają dostępne.
 
 **Nowe w 0.7.0:** gwiazdka obok gracza przekazuje mu lidera w lobby. Opuść Party przygotowuje kolejnego połączonego uczestnika i przenosi do niego pozostałych, zanim stary lider zamknie połączenie. [Działanie i ograniczenia migracji](docs/LEADERSHIP.md). Kod jest domyślnie ukryty, z oczkiem i ikoną kopiowania obok; poprawny kod dołącza bez akceptacji. Adres Cloudflare nadal ustawia się automatycznie. Każdy posiadacz kodu może wejść do Party. Wszyscy muszą zaktualizować mod i trzeba wdrożyć aktualny Worker.

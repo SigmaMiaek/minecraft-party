@@ -3,7 +3,6 @@
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-import base64
 import json
 import threading
 
@@ -43,16 +42,13 @@ try:
             assert page.locator('.world-art').evaluate('(img) => img.complete && img.naturalWidth > 0')
             # Reduced motion also keeps every section visible for full-page review.
             page.screenshot(path=str(artifacts / f'page-{width}.png'), full_page=True)
-            shot = page.screenshot(type='jpeg', quality=45)
-            print(f'VISUAL_PREVIEW_{width}=' + base64.b64encode(shot).decode(),flush=True)
             print(f'Render: {width}x{height}, assets loaded',flush=True)
         assert not overflow, f'Horizontal overflow at widths {overflow}'
 
         for width, selector, name in [(1440, '#mozliwosci', 'features'), (1440, '.leadership-block', 'leader'), (1440, '#instalacja', 'install'), (1440, '#pytania', 'faq'), (390, '#mozliwosci', 'mobile-feature')]:
             page.set_viewport_size({'width': width, 'height': 1000})
             page.locator(selector).evaluate('(element) => window.scrollTo(0, element.offsetTop - 110)')
-            shot = page.screenshot(type='jpeg', quality=35)
-            print(f'VISUAL_SECTION_{name}=' + base64.b64encode(shot).decode(),flush=True)
+            page.screenshot(path=str(artifacts / f'section-{name}.png'))
 
         page.set_viewport_size({'width': 1440, 'height': 1000})
         page.goto(url)
@@ -103,14 +99,6 @@ try:
         expect(page.locator('.download-main')).to_have_attribute('href', 'https://github.com/SigmaMiaek/minecraft-party/releases/download/v0.7.0%2B26.2/minecraft-party-0.7.0%2B26.2.jar')
         assert not errors, errors
         print('Mobile navigation, FAQ, published release target, no JavaScript errors passed')
-        # Compact previews in the log allow visual review even when the remote
-        # artifact downloader is unavailable. No user data is present in this demo.
-        page.goto(url)
-        for width in [1440, 390]:
-            page.set_viewport_size({'width': width, 'height': 1100 if width == 1440 else 844})
-            page.goto(url)
-            shot = page.screenshot(type='jpeg', quality=45)
-            print(f'VISUAL_PREVIEW_{width}=' + base64.b64encode(shot).decode())
         context.close()
         # The essential content, downloads, installation and FAQ also work without JS.
         context = browser.new_context(java_script_enabled=False, viewport={'width': 390, 'height': 844})

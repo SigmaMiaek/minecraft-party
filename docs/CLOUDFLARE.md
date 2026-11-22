@@ -14,7 +14,7 @@
 | Deploy command | `npm run deploy` |
 
 4. Kliknij **Deploy**. Konfiguracja zawiera wiązanie `DIRECTORY` i migrację SQLite; nie twórz ręcznie osobnej bazy. Jeśli panel pyta o subdomenę `workers.dev`, wybierz swoją nazwę. Cloudflare obsługuje token wdrożenia we własnym panelu — nie wklejaj go do moda, repozytorium ani rozmowy.
-5. Skopiuj publiczny adres, np. `https://minecraft-party.twoja-nazwa.workers.dev`. Otwórz go z dopiskiem `/health`: poprawna odpowiedź zawiera `"service":"minecraft-party-codes"` i `"protocol":1`. Sam adres `/` może zwrócić 404 i jest to prawidłowe. Do moda wkleja się adres **bez `/health`**.
+5. Skopiuj publiczny adres, np. `https://minecraft-party.twoja-nazwa.workers.dev`. Otwórz go z dopiskiem `/health`: poprawna odpowiedź zawiera `"service":"minecraft-party-codes"` i `"protocol":1`. Sam adres `/` wyświetla teraz stronę Minecraft Party z katalogu `website/dist`. Adres usługi w modzie pozostaje **bez `/health`**.
 
 Jeżeli ekran panelu ma inne nazwy, użyj [oficjalnej instrukcji importu repozytorium](https://developers.cloudflare.com/workers/get-started/dashboard/) oraz [konfiguracji katalogu i poleceń](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/). Projekt jest Workerem, a nie stroną Pages.
 

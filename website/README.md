@@ -34,6 +34,8 @@ GitHub Actions installs Playwright 1.65.2 and Chromium, exercises the rendered p
 desktop/tablet/phone sizes, checks the real interactions and attaches screenshots. The
 separate Cloudflare runtime test verifies that static assets, API routing and SQLite
 directory operations work together. These tests do not verify Minecraft multiplayer.
+On pushes to `main`, `test/live.py` also checks the public HTML, JavaScript and directory
+health after allowing time for Cloudflare's independent Git deployment to finish.
 
 When releasing the mod, update the version, requirements, release and JAR links in
 `dist/index.html`, and refresh `dist/assets/social.png`. Do not publish real invitations,
