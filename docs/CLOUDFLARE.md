@@ -43,3 +43,9 @@ Konto Cloudflare zakłada tylko administrator usługi; znajomi go nie potrzebuj�
 Lokalnie: kompilacja wszystkich źródeł Java i 68 testów bez gniazd przez narzędzie awaryjne; 13 scenariuszy polityki katalogu wykonanych w V8. Gradle lokalnie blokuje ograniczenie dostępu do interfejsów sieciowych. Workflow GitHub dodatkowo buduje i testuje mod na Windows/Linux, testuje Worker z rzeczywistym lokalnym runtime Wrangler i SQLite oraz sprawdza pakowanie `--dry-run`. Wynik konkretnego przebiegu należy sprawdzić w Actions.
 
 Nie wykonano tu wdrożenia na konto użytkownika ani testu nowej ścieżki kodów w dwóch uruchomionych klientach Minecraft. `/health` potwierdza wyłącznie dostępność aplikacji; testem funkcji jest utworzenie kodu, zatwierdzenie prośby, lobby i wejście do świata na dwóch komputerach.
+
+## Wdrożenie użytkownika — 22 listopada 2026
+
+Użytkownik wdrożył aplikację pod adresem `https://minecraft-party.wojciechowskaola57.workers.dev`. Log Cloudflare potwierdził udane przesłanie aplikacji, wiązanie `DIRECTORY (PartyDirectory)` i zakończenie wdrożenia. Użytkownik odczytał `/health` i przesłał odpowiedź `{"service":"minecraft-party-codes","protocol":1}`. Narzędzia tej sesji nie mogły samodzielnie otworzyć tego adresu. Nie potwierdzono jeszcze nowej ścieżki zatwierdzania na dwóch klientach Minecraft.
+
+Adres nie jest automatycznie wpisany do konfiguracji moda. Na obu komputerach ustaw go przez Party → Kody Party → Zapisz.

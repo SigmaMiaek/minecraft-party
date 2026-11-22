@@ -1,6 +1,6 @@
 # Minecraft Party — prototyp 0.6.0
 
-**Pobierz:** [wydania budowane przez GitHub Actions](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.6.0 pojawia się po zaliczeniu kompilacji/testów Windows i Linux oraz testów katalogu kodów. Starszy lokalny artefakt 0.5.2 pozostaje w `downloads`.
+**Pobierz prototyp:** [JAR 0.6.0 z kodami Cloudflare](https://github.com/SigmaMiaek/minecraft-party/raw/refs/heads/main/downloads/minecraft-party-0.6.0%2B26.2.jar) · [stan testów i SHA-256](downloads/README.md) · [wydania budowane przez GitHub Actions](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.6.0 pojawia się po zaliczeniu kompilacji/testów Windows i Linux oraz testów katalogu kodów. Starszy lokalny artefakt 0.5.2 pozostaje w `downloads`.
 
 **Nowe w 0.6.0:** opcjonalne sześciocyfrowe kody przez własną usługę Cloudflare Workers Free, zatwierdzanie próśb przez hosta, wygasanie i limity prób. [Instrukcja wdrożenia i konfiguracji obu klientów](docs/CLOUDFLARE.md). Kod backendu jest w `cloudflare`; usługa nie została automatycznie wdrożona. Administrator usługi i Cloudflare otrzymują dane zaproszeń. Bez ustawienia adresu nadal działają pełne prywatne zaproszenia mp3/mp2.
 
