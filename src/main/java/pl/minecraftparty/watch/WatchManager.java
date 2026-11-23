@@ -104,6 +104,9 @@ public final class WatchManager {
     public Identifier texture() { return player == null ? null : player.texture(); }
     public void click(double u, double v, int button) { if (player != null) player.click(u, v, button); }
     public void release(double u, double v, int button) { if (player != null) player.release(u, v, button); }
+    public void move(double u, double v) { if (player != null) player.move(u, v); }
+    public void wheel(double u, double v, double amount, int modifiers) { if (player != null) player.wheel(u, v, amount, modifiers); }
+    public void unfocus() { if (player != null) player.unfocus(); }
     public void tick() {
         WatchState next = party.host() != null ? party.host().watch() : party.guest() != null && party.guest().connected() ? party.guest().watch() : null;
         if (next != null && (party.state() == null || !next.worldId().equals(party.state().worldId()))) next = null;

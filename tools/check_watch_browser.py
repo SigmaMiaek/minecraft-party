@@ -42,7 +42,9 @@ contracts = {
     'de.keksuccino.rinku.Rinku': ['public static boolean isInitialized();',
         'public static de.keksuccino.rinku.RinkuBrowser createBrowser(java.lang.String, boolean, int, int);'],
     'de.keksuccino.rinku.RinkuBrowser': ['public net.minecraft.resources.Identifier getTextureIdentifier();',
-        'public void sendMousePress(int, int, int);', 'public void sendMouseRelease(int, int, int);', 'public void close();']
+        'public void sendMousePress(int, int, int);', 'public void sendMouseRelease(int, int, int);',
+        'public void sendMouseMove(int, int);', 'public void sendMouseWheel(int, int, double, int);', 'public void close();'],
+    'org.cef.browser.CefBrowser': ['public abstract void setFocus(boolean);']
 }
 for name, methods in contracts.items():
     actual = subprocess.check_output([str(args.jdk / 'bin/javap'), '-public', '-classpath', str(artifact), name], text=True)

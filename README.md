@@ -1,10 +1,10 @@
-# Minecraft Party — prototyp 0.10.0
+# Minecraft Party — prototyp 0.10.1
 
 **Strona projektu:** [Minecraft Party](https://sigmamiaek.github.io/minecraft-party/) — opis funkcji, podgląd lobby, instalacja i pobieranie. Źródła strony znajdują się w [website/](website/README.md).
 
-**Pobierz:** [wydania Minecraft Party](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.10.0 jest publikowane po udanej kompilacji i testach Windows/Linux oraz katalogu kodów. [Starsze lokalne prototypy](downloads/README.md) pozostają dostępne.
+**Pobierz:** [wydania Minecraft Party](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.10.1 jest publikowane po udanej kompilacji i testach Windows/Linux oraz katalogu kodów. [Starsze lokalne prototypy](downloads/README.md) pozostają dostępne.
 
-**Nowe w 0.10.0:** **Watch Party → YouTube na ekranie w świecie**. Host ustawia ekran i steruje odtwarzaniem/pauzą/przewijaniem; widzowie dołączają dobrowolnie. Własna głośność, dźwięk cichnący z odległością, napisy i jakość z oficjalnego odtwarzacza YouTube. **Do oglądania potrzebny dodatkowy mod Rinku dla Fabric 26.2 (3.0.4+, gałąź 3.x)**; zwykłe Party go nie wymaga. Wszyscy uczestnicy aktualizują Party do 0.10.0 (MPT6), Worker do main. **Netflix i Prime nie są obsługiwane.** Oglądania w działającej grze ani dwóch komputerów nie zweryfikowano w tym środowisku. [Instrukcja Watch Party](docs/WATCH_PARTY.md) · [wydanie](docs/releases/0.10.0+26.2.md).
+**Nowe w 0.10.1:** **Watch Party → YouTube na ekranie w świecie**. Host ustawia ekran i steruje odtwarzaniem/pauzą/przewijaniem; widzowie dołączają dobrowolnie. Własna głośność, dźwięk cichnący z odległością, napisy i jakość z oficjalnego odtwarzacza YouTube. **Do oglądania potrzebny dodatkowy mod Rinku dla Fabric 26.2 (3.0.4+, gałąź 3.x)**; zwykłe Party go nie wymaga. Wszyscy uczestnicy aktualizują Party do 0.10.1 (MPT6), Worker do main. **Netflix i Prime nie są obsługiwane.** Oglądania w działającej grze ani dwóch komputerów nie zweryfikowano w tym środowisku. [Instrukcja Watch Party](docs/WATCH_PARTY.md) · [wydanie](docs/releases/0.10.1+26.2.md).
 
 **Nowe w 0.9.0:** menu według szkicu: tworzenie Party u góry po lewej, prywatny kod poniżej i lista publicznych lobby po prawej. Liczbę graczy wybierasz suwakiem **2–10, razem z hostem**. Przy małym oknie są zakładki Utwórz / Dołącz kodem / Publiczne. Odświeżenie listy nie przebudowuje pól formularza. Prywatne pozostaje domyślne, a kod gospodarza jest ukryty. **Wszyscy uczestnicy potrzebują 0.9.0 (MPT5); zaktualizuj też Worker z main.** Mod zachowuje automatyczny adres usługi. Usługa nadal obsługuje 0.8.0, ale rozdziela listy niezgodnych protokołów. [Szczegóły i ograniczenia](docs/releases/0.9.0+26.2.md).
 
@@ -19,7 +19,7 @@ Niezależny mod kliencki Fabric z lobby istniejącym poza światem i szyfrowanym
 ## Instalacja prototypu
 
 1. Obaj gracze instalują Minecraft Java **26.2**, Fabric Loader **0.19.3 lub nowszy zgodny z 26.2**, Fabric API **0.161.0+26.2** i Java **25**.
-2. Skopiuj `build/libs/minecraft-party-0.10.0+26.2.jar` do katalogu `mods` każdej instancji. Usuń poprzedni JAR Party i uruchom ponownie Minecrafta. Instalowanie moda e4mc nie jest wymagane.
+2. Skopiuj `build/libs/minecraft-party-0.10.1+26.2.jar` do katalogu `mods` każdej instancji. Usuń poprzedni JAR Party i uruchom ponownie Minecrafta. Instalowanie moda e4mc nie jest wymagane.
 3. Użyj dwóch różnych, prawidłowo zalogowanych kont Minecraft. Ten prototyp zachowuje logowanie vanilla; uruchomienie developerskie bez sesji Microsoft nie sprawdza prawdziwego dołączania do świata.
 4. Host tworzy Party. Mod automatycznie korzysta z e4mc i domyślnej usługi kodów. Przy pierwszej próbie pobiera zweryfikowaną bibliotekę natywną; potrzebne są HTTPS i wychodzące UDP.
 5. Znajomy wpisuje sześć cyfr i od razu rozpoczyna połączenie. Szczegóły: [Kody Party](docs/CLOUDFLARE.md).
@@ -42,7 +42,7 @@ Czat rzeczywiście przesyła wiadomości kanałem TLS lobby. Ma limit 256 znakó
 
 Nie jest to tunel zewnętrznego serwera przez hosta: każdy gracz łączy się bezpośrednio z tym samym adresem, używa własnego konta i podlega whiteliście, limitowi miejsc oraz wymaganiom modów tego serwera. Po wyjściu hosta lub wyłączeniu wspólnego serwera sesja jest wycofywana i uczestnicy wracają do lobby. Ustawienie zapisuje się w konfiguracji jako `shareMultiplayer`. Adresy `localhost` / loopback są odrzucane, ponieważ wskazują inny komputer u każdego gracza.
 
-Zalecana wersja dla wszystkich uczestników: 0.10.0. Zaproszenia przez e4mc używają **mp3:**; bezpośrednie nadal **mp2:**. Stare mp1 nie są obsługiwane. Poprawka TLS działa na hoście, a poprawka menu na gościu, dlatego aktualizuj oba komputery, uruchom ponownie grę i utwórz nowe Party.
+Zalecana wersja dla wszystkich uczestników: 0.10.1. Zaproszenia przez e4mc używają **mp3:**; bezpośrednie nadal **mp2:**. Stare mp1 nie są obsługiwane. Poprawka TLS działa na hoście, a poprawka menu na gościu, dlatego aktualizuj oba komputery, uruchom ponownie grę i utwórz nowe Party.
 
 ## Poprawka 0.5.2 — odczyt TLS i menu innych klientów
 

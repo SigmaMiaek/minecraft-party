@@ -22,6 +22,7 @@ public final class WatchPartyScreen extends Screen {
     private int size = 6, x, w, previewX, previewY, previewW, previewH;
     private Button place, play, backTen, forwardTen, seek, stop, join;
     private boolean pressed;
+    private int pressedButton;
     public WatchPartyScreen(Screen parent) { super(tr("watch.title")); this.parent = parent; }
     private Button button(String key, int x, int y, int width, Runnable action) {
         return addRenderableWidget(Button.builder(tr(key), b -> action.run()).bounds(x, y, width, 20).build());
@@ -103,13 +104,32 @@ public final class WatchPartyScreen extends Screen {
     @Override public boolean mouseClicked(MouseButtonEvent event, boolean twice) {
         if (super.mouseClicked(event, twice)) return true;
         if (inPreview(event.x(), event.y()) && party.watch.watching()) {
-            pressed = true; party.watch.click((event.x() - previewX) / previewW, (event.y() - previewY) / previewH, event.button()); return true;
+            setFocused(null); pressed = true; pressedButton = event.button();
+            party.watch.click((event.x() - previewX) / previewW, (event.y() - previewY) / previewH, event.button()); return true;
         }
         return false;
     }
     @Override public boolean mouseReleased(MouseButtonEvent event) {
         if (pressed) { pressed = false; party.watch.release((event.x() - previewX) / previewW, (event.y() - previewY) / previewH, event.button()); return true; }
         return super.mouseReleased(event);
+    }
+    @Override public void mouseMoved(double x, double y) {
+        if (inPreview(x, y) && party.watch.watching()) party.watch.move((x - previewX) / previewW, (y - previewY) / previewH);
+        super.mouseMoved(x, y);
+    }
+    @Override public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (pressed) { party.watch.move((event.x() - previewX) / previewW, (event.y() - previewY) / previewH); return true; }
+        return super.mouseDragged(event, dx, dy);
+    }
+    @Override public boolean mouseScrolled(double x, double y, double horizontal, double vertical) {
+        if (inPreview(x, y) && party.watch.watching()) {
+            party.watch.wheel((x - previewX) / previewW, (y - previewY) / previewH, vertical, 0); return true;
+        }
+        return super.mouseScrolled(x, y, horizontal, vertical);
+    }
+    @Override public void removed() {
+        if (pressed) { pressed = false; party.watch.release(0.5, 0.5, pressedButton); }
+        party.watch.unfocus(); super.removed();
     }
     @Override public void onClose() { minecraft.gui.setScreen(parent); }
     @Override public boolean isPauseScreen() { return false; }

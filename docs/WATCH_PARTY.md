@@ -4,7 +4,7 @@ Pierwszy prototyp w 0.10.0 używa oficjalnego YouTube IFrame API i opcjonalnego 
 
 ## Instalacja i oglądanie
 
-1. Wszyscy instalują Minecraft Party **0.10.0+26.2**. Osoby oglądające dodatkowo instalują **Rinku 3.0.4 lub nowsze z gałęzi 3.x, Fabric, Minecraft 26.2** z oficjalnej [listy wersji](https://modrinth.com/mod/rinku/versions?g=26.2&l=fabric). W menu Watch Party jest przycisk Pobierz Rinku. Rinku przy uruchomieniu przygotowuje swój natywny pakiet Chromium; pobieranie i konfigurację obsługuje ten mod. Bez Rinku można nadal używać zwykłych funkcji Party.
+1. Wszyscy instalują Minecraft Party **0.10.1+26.2**. Osoby oglądające dodatkowo instalują **Rinku 3.0.4 lub nowsze z gałęzi 3.x, Fabric, Minecraft 26.2** z oficjalnej [listy wersji](https://modrinth.com/mod/rinku/versions?g=26.2&l=fabric). W menu Watch Party jest przycisk Pobierz Rinku. Rinku przy uruchomieniu przygotowuje swój natywny pakiet Chromium; pobieranie i konfigurację obsługuje ten mod. Bez Rinku można nadal używać zwykłych funkcji Party.
 2. Utwórz Party i wejdźcie razem do świata hosta. Następnie **ESC → Party → Watch Party…**.
 3. Host wkleja link do YouTube albo 11-znakowe ID filmu. Wybiera rozmiar i naciska **Ustaw ekran**. Ekran pojawia się sześć bloków przed hostem, pionowo, w proporcjach 16:9. Film zaczyna od pauzy. Ponowne ustawienie zastępuje ekran i rozpoczyna nową sesję oglądania.
 4. Pozostali wybierają **Dołącz do oglądania**. Każdy klika raz podgląd filmu, aby zezwolić przeglądarce na odtwarzanie i dźwięk. Host po ustawieniu ekranu dołącza lokalnie automatycznie, ale również musi wykonać to kliknięcie.
