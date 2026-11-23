@@ -5,7 +5,11 @@ import time
 import urllib.request
 
 origin = 'https://minecraft-party.wojciechowskaola57.workers.dev'
-deadline = time.monotonic() + 300
+# Git auto-deploy runs alongside CI. After /health changes, an active directory
+# can still use the previous code for Cloudflare's default 300-second DO deferral.
+# Allow both deployment and that deferral; keep testing the real list endpoint.
+# https://developers.cloudflare.com/durable-objects/deployments/durable-objects-code-updates/
+deadline = time.monotonic() + 600
 
 
 def request(path, body=None):
