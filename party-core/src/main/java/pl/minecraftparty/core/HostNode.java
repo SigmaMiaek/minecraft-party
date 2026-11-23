@@ -26,6 +26,21 @@ public final class HostNode implements AutoCloseable {
     private InetSocketAddress worldTarget;
     private UUID worldId;
     private boolean multiplayer;
+    private WatchState watch;
+    public synchronized WatchState watch() { return watch; }
+    public synchronized void startWatch(String videoId, WatchState.Placement placement) {
+        if (closed || worldId == null || leadershipPlan != null) throw new IllegalStateException("world unavailable");
+        watch = new WatchState(UUID.randomUUID(), worldId, videoId, placement, 0, 0, false, System.nanoTime()); publish();
+    }
+    public synchronized void playWatch(boolean playing) {
+        if (watch == null) throw new IllegalStateException("no watch session");
+        long now = System.nanoTime(); watch = watch.control(watch.positionAt(now), playing, now); publish();
+    }
+    public synchronized void seekWatch(long position) {
+        if (watch == null) throw new IllegalStateException("no watch session");
+        watch = watch.control(position, watch.playing(), System.nanoTime()); publish();
+    }
+    public synchronized void stopWatch() { watch = null; publish(); }
     public record LeadershipEvent(UUID sender, LeadershipPacket packet) { }
     private volatile Consumer<LeadershipEvent> leadershipListener = event -> {};
     private LeadershipPlan leadershipPlan;
@@ -128,6 +143,7 @@ public final class HostNode implements AutoCloseable {
         boolean accepted = model.chat(hostId, text); if (accepted) publish(); return accepted;
     }
     public synchronized void closeWorld() {
+        watch = null;
         worldTarget = null; worldId = null; multiplayer = false;
         playersInWorld.clear();
         controls.values().forEach(Control::closeTunnel);
@@ -234,7 +250,7 @@ public final class HostNode implements AutoCloseable {
                     if (!(packet instanceof LeadershipPacket.Ack)) leadershipListener.accept(new LeadershipEvent(id, packet));
                 } else if (command != Wire.PING) throw new IOException("command");
                 // A periodic snapshot is also a server heartbeat, independent of state revisions.
-                control.offer(model.snapshot());
+                synchronized (this) { control.offer(model.snapshot(), watch); }
             }
         } finally {
             synchronized (this) {
@@ -268,7 +284,7 @@ public final class HostNode implements AutoCloseable {
     }
     private synchronized void publish() {
         LobbyState snapshot = model.snapshot();
-        controls.values().forEach(c -> c.offer(snapshot));
+        controls.values().forEach(c -> c.offer(snapshot, watch));
         onState.accept(snapshot);
     }
     @Override public synchronized void close() {
@@ -283,21 +299,24 @@ public final class HostNode implements AutoCloseable {
         final String name;
         final SSLSocket socket;
         final DataOutputStream out;
-        record Outbound(LobbyState snapshot, LeadershipPacket signal) { }
+        record Outbound(LobbyState snapshot, LeadershipPacket signal, WatchState watch) { }
         final ArrayBlockingQueue<Outbound> updates = new ArrayBlockingQueue<>(16);
         volatile boolean closed;
         Socket tunnel, backend;
         Thread writer;
         String credential;
         Control(UUID id, String name, SSLSocket socket, DataOutputStream out) { this.id = id; this.name = name; this.socket = socket; this.out = out; }
-        void offer(LobbyState state) { updates.removeIf(m -> m.snapshot() != null); updates.offer(new Outbound(state, null)); }
-        void send(LeadershipPacket signal) { if (!updates.offer(new Outbound(null, signal))) Thread.ofVirtual().start(this::close); }
+        void offer(LobbyState state, WatchState watch) { updates.removeIf(m -> m.snapshot() != null); updates.offer(new Outbound(state, null, watch)); }
+        void send(LeadershipPacket signal) { if (!updates.offer(new Outbound(null, signal, null))) Thread.ofVirtual().start(this::close); }
         void writeUpdates() {
             writer = Thread.currentThread();
             try {
                 while (!closed) {
                     var message = updates.take();
-                    if (message.snapshot() != null) { out.writeByte(Wire.SNAPSHOT); Wire.snapshot(out, message.snapshot()); }
+                    if (message.snapshot() != null) {
+                        out.writeByte(Wire.SNAPSHOT); Wire.snapshot(out, message.snapshot());
+                        out.writeByte(Wire.WATCH); WatchWire.write(out, message.watch());
+                    }
                     else LeadershipPacket.write(out, message.signal());
                     out.flush();
                 }

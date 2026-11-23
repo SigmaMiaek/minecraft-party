@@ -151,12 +151,16 @@ public final class PartyScreen extends Screen {
                 int half = (w - 4) / 2;
                 button("rotate", x, top + 42, half, manager::rotateInvite);
                 follow = button("follow", x + half + 4, top + 42, half, manager::toggleMultiplayerSharing);
-                teleport = button("teleport", x, top + 65, w, manager::toggleTeleport);
+                teleport = button("teleport", x, top + 65, half, manager::toggleTeleport);
             }
         } else {
             retry = button("retry", x, bottom - 49, w, manager::retryWorld);
         }
         if (follow != null) follow.setTooltip(Tooltip.create(tr("follow_hint")));
+        button("watch.open", !wide && manager.host() != null ? x + (w - 4) / 2 + 4 : x,
+                manager.host() != null ? top + (wide ? 123 : 65) : bottom - 74,
+                !wide && manager.host() != null ? (w - 4) / 2 : w,
+                () -> minecraft.gui.setScreen(new WatchPartyScreen(this)));
         if (teleport != null) teleport.setTooltip(Tooltip.create(tr("teleport_hint")));
         button("leave", x, bottom - 25, w, manager::leave);
     }

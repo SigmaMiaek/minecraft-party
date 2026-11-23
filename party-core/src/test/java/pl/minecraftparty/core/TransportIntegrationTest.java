@@ -19,6 +19,30 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("network")
 @Timeout(value = 20, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
 class TransportIntegrationTest {
+    @Test void watchScreenPauseSeekLateJoinAndWorldCloseSynchronizeThroughRealTls() throws Exception {
+        try (HostNode host = host(4);
+             GuestNode guest = new GuestNode(host.invite(), UUID.randomUUID(), "Viewer", s -> {}, text -> {})) {
+            await(guest::connected);
+            assertThrows(IllegalStateException.class, () -> host.startWatch("M7lc1UVf-VE",
+                    new WatchState.Placement("minecraft:overworld", 0, 64, 0, 0, 6)));
+            host.openWorld(new InetSocketAddress("127.0.0.1", 25565), UUID.randomUUID());
+            host.startWatch("M7lc1UVf-VE", new WatchState.Placement("minecraft:overworld", 10, 70, 20, 180, 6));
+            await(() -> guest.watch() != null);
+            assertFalse(guest.watch().playing()); assertEquals("M7lc1UVf-VE", guest.watch().videoId());
+            host.seekWatch(65_000); host.playWatch(true);
+            await(() -> guest.watch().playing() && guest.watch().positionMs() >= 65_000);
+            try (GuestNode late = new GuestNode(host.invite(), UUID.randomUUID(), "Late", s -> {}, text -> {})) {
+                await(() -> late.watch() != null && late.watch().playing());
+                assertEquals(guest.watch().sessionId(), late.watch().sessionId());
+                host.playWatch(false); await(() -> !guest.watch().playing() && !late.watch().playing());
+                host.stopWatch(); await(() -> guest.watch() == null && late.watch() == null);
+                host.startWatch("M7lc1UVf-VE", new WatchState.Placement("minecraft:overworld", 10, 70, 20, 0, 6));
+                await(() -> guest.watch() != null);
+                host.closeWorld(); await(() -> guest.watch() == null && guest.snapshot().worldId() == null);
+                assertTrue(guest.connected()); assertTrue(late.connected());
+            }
+        }
+    }
     @Test void chatAndSharedMultiplayerDestinationSynchronizeOverTls() throws Exception {
         AtomicReference<LobbyState> state = new AtomicReference<>();
         try (HostNode host = host(4);

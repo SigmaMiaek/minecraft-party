@@ -23,6 +23,8 @@ public final class GuestNode implements AutoCloseable {
     private volatile String resume = "";
     private volatile LobbyState.Status status = LobbyState.Status.LOBBY;
     private volatile LobbyState state;
+    private volatile WatchState watch;
+    public WatchState watch() { return watch; }
     private LocalProxy proxy;
     private final Thread worker;
     private final ConnectionTrace trace = new ConnectionTrace();
@@ -78,6 +80,13 @@ public final class GuestNode implements AutoCloseable {
                 try {
                     while (!closed) {
                         int kind = in.readUnsignedByte();
+                        if (kind == Wire.WATCH) {
+                            WatchState next = WatchWire.read(in);
+                            if (next != null && (state == null || !next.worldId().equals(state.worldId())
+                                    || watch != null && watch.sessionId().equals(next.sessionId()) && next.revision() < watch.revision()))
+                                throw new IOException("watch session");
+                            watch = next; continue;
+                        }
                         if (kind >= 20 && kind <= 26) {
                             if (kind != 20 && kind != 22 && kind != 23 && kind != 26) throw new IOException("leadership direction");
                             LeadershipPacket packet = LeadershipPacket.read(kind, in);

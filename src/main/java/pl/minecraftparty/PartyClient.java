@@ -24,6 +24,7 @@ public final class PartyClient implements ClientModInitializer {
     public static PartyManager manager;
     @Override public void onInitializeClient() {
         manager = new PartyManager(Minecraft.getInstance());
+        pl.minecraftparty.watch.WatchWorldRenderer.register(manager.watch);
         PartyMenuShortcut.register();
         ClientTickEvents.END_CLIENT_TICK.register(client -> manager.tick());
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> manager.shutdown());

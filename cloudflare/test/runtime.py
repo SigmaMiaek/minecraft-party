@@ -70,7 +70,7 @@ with tempfile.TemporaryFile(mode='w+') as log:
         assert immediate['status'] == 'approved' and immediate['invite'] == invite
         call('remove', {'code': auto['code'], 'owner': auto['owner']})
         assert call('health')['publicLobbies'] is True
-        assert call('health')['partyProtocols'] == [4, 5]
+        assert call('health')['partyProtocols'] == [4, 5, 6]
         assert call('health')['maxPlayers'] == 10
         assert call('list', {})['lobbies'] == []
         assert call('list', {'protocol': 5})['lobbies'] == []

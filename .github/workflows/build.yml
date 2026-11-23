@@ -57,11 +57,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test directory authorization and expiry
         shell: bash
-        run: node --test cloudflare/test/registry.test.mjs
+        run: |
+          node --test cloudflare/test/registry.test.mjs
+          node --test src/test/js/watch-player.test.mjs
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '25'
+      - name: Verify optional Rinku adapter against its published binary
+        shell: bash
+        run: python3 tools/check_watch_browser.py --jdk "$JAVA_HOME"
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
       - name: Build and test including real loopback sockets
         timeout-minutes: 8

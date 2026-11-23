@@ -22,6 +22,7 @@ public final class PartyManager {
     public final PartyWorldPermissions permissions;
     public final PartyCodes codes;
     public final PartyLeadership leadership;
+    public final pl.minecraftparty.watch.WatchManager watch;
     private HostNode host;
     private GuestNode guest;
     private LobbyState state;
@@ -70,6 +71,7 @@ public final class PartyManager {
         this.client = client; config = PartyConfig.load(); permissions = new PartyWorldPermissions(this::message);
         codes = new PartyCodes(this, client);
         leadership = new PartyLeadership(this, client);
+        watch = new pl.minecraftparty.watch.WatchManager(client, this);
         bridge = new IntegratedServerBridge(this); sessions = new ClientSessionManager(this, client);
     }
     public LobbyState state() { return state; }
@@ -79,6 +81,10 @@ public final class PartyManager {
     public String message() { return message; }
     public boolean busy() { return busy || leadership.busy(); }
     public boolean active() { return host != null || guest != null || busy; }
+    public boolean inPartyWorld() {
+        return client.level != null && state != null && state.worldId() != null
+                && (host != null || guest != null && sessions.partyConnection());
+    }
     public boolean canChat() { return !leadership.busy() && (host != null || guest != null && guest.connected()); }
     public boolean chat(String text) {
         String clean = text.strip();
@@ -231,6 +237,7 @@ public final class PartyManager {
         leaveImmediately();
     }
     void leaveImmediately() {
+        watch.reset();
         leadership.reset();
         codes.reset();
         previousDiagnostics = host != null ? hostDiagnostics() : guest != null ? "Target TCP port: " + targetPort + "\n" + guest.diagnostics() : previousDiagnostics;
@@ -248,6 +255,7 @@ public final class PartyManager {
         catch (IllegalStateException e) { return ""; }
     }
     public void tick() {
+        watch.tick();
         leadership.tick();
         if (!leadership.busy()) codes.tick();
         if (!leadership.busy()) {

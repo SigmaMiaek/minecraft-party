@@ -38,7 +38,7 @@ class ProtocolTest {
         assertEquals(10, model.snapshot().members().size());
         var bytes = new ByteArrayOutputStream(); Wire.snapshot(new DataOutputStream(bytes), model.snapshot());
         assertEquals(model.snapshot(), Wire.snapshot(input(bytes.toByteArray())));
-        assertEquals(0x4d505435, Wire.MAGIC);
+        assertEquals(0x4d505436, Wire.MAGIC);
         assertThrows(SecurityException.class, () -> model.join(UUID.randomUUID(), "Extra", model.inviteSecret(), ""));
         assertThrows(IllegalArgumentException.class, () -> new LobbyModel(UUID.randomUUID(), "Host", "Too many", 11));
     }

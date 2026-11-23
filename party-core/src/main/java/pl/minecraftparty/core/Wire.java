@@ -5,9 +5,9 @@ import java.util.*;
 
 /** Bounded, versioned binary protocol; no Java deserialization or remote class names. */
 final class Wire {
-    static final int MAGIC = 0x4d505430 + PartyProtocol.VERSION; // MPT5 supports ten-member snapshots.
+    static final int MAGIC = 0x4d505430 + PartyProtocol.VERSION; // MPT6 adds host-controlled Watch Party updates.
     static final int CONTROL = 1, TUNNEL = 2;
-    static final int WELCOME = 1, SNAPSHOT = 2, ERROR = 3;
+    static final int WELCOME = 1, SNAPSHOT = 2, ERROR = 3, WATCH = 4;
     static final int PING = 1, STATUS = 2, LEAVE = 3, CHAT = 4;
     private Wire() { }
     static void uuid(DataOutput out, UUID id) throws IOException { out.writeLong(id.getMostSignificantBits()); out.writeLong(id.getLeastSignificantBits()); }

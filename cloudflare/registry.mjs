@@ -9,9 +9,9 @@ function listing(value) {
       || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 40
       || /[\p{Cc}\p{Cf}\p{Cs}\u00a7]/u.test(value.name)
       || typeof value.host !== 'string' || !/^[A-Za-z0-9_]{1,16}$/.test(value.host)
-      || !Number.isSafeInteger(value.limit) || value.limit < 2 || value.limit > (value.protocol === 5 ? 10 : 8)
+      || !Number.isSafeInteger(value.limit) || value.limit < 2 || value.limit > (value.protocol >= 5 ? 10 : 8)
       || !Number.isSafeInteger(value.players) || value.players < 1 || value.players > value.limit
-      || typeof value.inWorld !== 'boolean' || value.minecraft !== '26.2' || ![4, 5].includes(value.protocol)) fail(400);
+      || typeof value.inWorld !== 'boolean' || value.minecraft !== '26.2' || ![4, 5, 6].includes(value.protocol)) fail(400);
   // Copy only the deliberately public fields; never retain arbitrary client keys.
   return { name: value.name, host: value.host, players: value.players, limit: value.limit,
     inWorld: value.inWorld, minecraft: '26.2', protocol: value.protocol };
@@ -36,7 +36,7 @@ export class Registry {
     const now = this.now();
     if (action === 'list') {
       const page = body.page ?? 0, size = body.size ?? 8, protocol = body.protocol ?? 4;
-      if (![4, 5].includes(protocol)) fail(400);
+      if (![4, 5, 6].includes(protocol)) fail(400);
       if (!Number.isSafeInteger(page) || page < 0 || page > 255 || !Number.isSafeInteger(size) || size < 1 || size > 16) fail(400);
       const rooms = this.store.list().filter(entry => entry.room.publicLobby === true && entry.room.expiresAt > now
           && entry.room.listing?.protocol === protocol && entry.room.autoJoin === true).sort((a, b) => a.code.localeCompare(b.code));
