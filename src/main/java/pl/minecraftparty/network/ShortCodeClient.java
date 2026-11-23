@@ -155,7 +155,7 @@ public final class ShortCodeClient implements AutoCloseable {
     private JsonObject call(String action, JsonObject body) throws IOException {
         try {
             var request = HttpRequest.newBuilder(endpoint.resolve("/v1/" + action)).timeout(Duration.ofSeconds(5))
-                    .header("User-Agent", "MinecraftParty/0.10.1 (+https://github.com/SigmaMiaek/minecraft-party)")
+                    .header("User-Agent", "MinecraftParty/0.11.0 (+https://github.com/SigmaMiaek/minecraft-party)")
                     .header("Content-Type", "application/json").header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body.toString())).build();
             var response = http.send(request, info -> new LimitedHttpBody(16384));

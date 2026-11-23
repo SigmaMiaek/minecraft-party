@@ -70,7 +70,7 @@ with tempfile.TemporaryFile(mode='w+') as log:
         assert immediate['status'] == 'approved' and immediate['invite'] == invite
         call('remove', {'code': auto['code'], 'owner': auto['owner']})
         assert call('health')['publicLobbies'] is True
-        assert call('health')['partyProtocols'] == [4, 5, 6]
+        assert call('health')['partyProtocols'] == [4, 5, 6, 7]
         assert call('health')['maxPlayers'] == 10
         assert call('list', {})['lobbies'] == []
         assert call('list', {'protocol': 5})['lobbies'] == []
@@ -96,6 +96,12 @@ with tempfile.TemporaryFile(mode='w+') as log:
         call('list', {'protocol': '5'}, 400)
         call('remove', {'code': modern['code'], 'owner': modern['owner']})
         assert call('list', {'protocol': 5})['lobbies'] == []
+        handoff = call('create', {'invite': invite, 'expiresAt': int(time.time() * 1000) + 300000,
+                                  'autoJoin': True, 'publicLobby': True,
+                                  'listing': {**metadata, 'protocol': 7, 'limit': 10}})
+        assert call('list', {'protocol': 7})['lobbies'][0]['code'] == handoff['code']
+        assert call('list', {'protocol': 6})['lobbies'] == []
+        call('remove', {'code': handoff['code'], 'owner': handoff['owner']})
         call('remove', owner)
         assert call('list', {})['lobbies'] == []
         print('Real Worker + SQLite: assets, health, approval, auto-join, ten-player rooms, protocol isolation and revocation passed.')

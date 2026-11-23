@@ -18,7 +18,7 @@ import net.minecraft.resources.Identifier;
 import pl.minecraftparty.ui.NetworkDiagnosticsScreen;
 import pl.minecraftparty.ui.PartyCodesScreen;
 import pl.minecraftparty.ui.PartyScreen;
-import pl.minecraftparty.ui.WatchPartyScreen;
+import pl.minecraftparty.ui.WorldTransferScreen;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -46,7 +46,7 @@ public final class PartyMenuShortcut {
         if (!ClientSessionManager.canAutoJoinFrom(type) || OptionsScreen.class.isAssignableFrom(type)
                 || OptionsSubScreen.class.isAssignableFrom(type) || PartyScreen.class.isAssignableFrom(type)
                 || PartyCodesScreen.class.isAssignableFrom(type) || NetworkDiagnosticsScreen.class.isAssignableFrom(type)
-                || WatchPartyScreen.class.isAssignableFrom(type)) return false;
+                || WorldTransferScreen.class.isAssignableFrom(type)) return false;
         // Do not interrupt vanilla account, confirmation, server-list or resource-pack screens.
         return TitleScreen.class.isAssignableFrom(type) || !type.getName().startsWith("net.minecraft.");
     }

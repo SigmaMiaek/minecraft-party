@@ -25,6 +25,10 @@ with ZipFile(artifact) as jar:
         assert mixins['package'].replace('.', '/') + '/' + mixin + '.class' in jar.namelist()
     assert 'pl/minecraftparty/core/HostNode.class' in jar.namelist()
     assert 'pl/minecraftparty/network/E4mcRelay.class' in jar.namelist()
+    assert 'pl/minecraftparty/WorldTransferManager.class' in jar.namelist()
+    assert 'pl/minecraftparty/world/WorldOwnership.class' in jar.namelist()
+    assert not any('/watch/' in name or name.endswith(('WatchState.class', 'WatchWire.class', 'WatchPartyScreen.class')) for name in jar.namelist())
+    assert 'rinku' not in metadata.get('suggests', {})
     assert 'io/netty/incubator/codec/quic/QuicChannel.class' in jar.namelist()
     for license in ['LICENSE.txt', 'NOTICE.txt', 'UPSTREAM.md', 'license/LICENSE.quiche.txt', 'license/LICENSE.boringssl.txt']:
         assert 'META-INF/licenses/netty-quic/' + license in jar.namelist()

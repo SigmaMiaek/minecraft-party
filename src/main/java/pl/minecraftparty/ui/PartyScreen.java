@@ -157,10 +157,11 @@ public final class PartyScreen extends Screen {
             retry = button("retry", x, bottom - 49, w, manager::retryWorld);
         }
         if (follow != null) follow.setTooltip(Tooltip.create(tr("follow_hint")));
-        button("watch.open", !wide && manager.host() != null ? x + (w - 4) / 2 + 4 : x,
+        Button gift = button("gift.open", !wide && manager.host() != null ? x + (w - 4) / 2 + 4 : x,
                 manager.host() != null ? top + (wide ? 123 : 65) : bottom - 74,
                 !wide && manager.host() != null ? (w - 4) / 2 : w,
-                () -> minecraft.gui.setScreen(new WatchPartyScreen(this)));
+                () -> minecraft.gui.setScreen(new WorldTransferScreen(this)));
+        gift.setTooltip(Tooltip.create(tr("gift.open_hint")));
         if (teleport != null) teleport.setTooltip(Tooltip.create(tr("teleport_hint")));
         button("leave", x, bottom - 25, w, manager::leave);
     }

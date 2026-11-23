@@ -34,11 +34,15 @@ public final class PartyLeadership {
         departing = true; next(); return true;
     }
     public void transfer(UUID id) {
+        if (manager.worlds.busy()) { manager.message("gift_busy"); return; }
+        transfer(id, false);
+    }
+    void transfer(UUID id, boolean leaving) {
         if (manager.host() == null || busy()) return;
         if (manager.state() == null || manager.state().worldId() != null || client.level != null || client.getSingleplayerServer() != null) {
             manager.message("leader_only_lobby"); return;
         }
-        candidates.clear(); candidates.add(id); departing = false; next();
+        candidates.clear(); candidates.add(id); departing = leaving; next();
     }
     private void next() {
         UUID target = candidates.poll();
@@ -72,7 +76,7 @@ public final class PartyLeadership {
                 client.execute(() -> {
                     if (epoch != operation || manager.host() != host) return;
                     outgoing = null; starting = committing = false; candidates.clear();
-                    if (plan.leaving()) manager.leaveImmediately();
+                    if (plan.leaving()) { manager.worlds.committedOutgoing(); manager.leaveImmediately(); }
                     else manager.migrateGuest(ready.invite(), plan.credentials().get(plan.previousLeader()));
                 });
             } catch (Exception e) { client.execute(() -> { if (epoch == operation) failed(); }); }

@@ -24,13 +24,13 @@ public final class PartyClient implements ClientModInitializer {
     public static PartyManager manager;
     @Override public void onInitializeClient() {
         manager = new PartyManager(Minecraft.getInstance());
-        pl.minecraftparty.watch.WatchWorldRenderer.register(manager.watch);
         PartyMenuShortcut.register();
         ClientTickEvents.END_CLIENT_TICK.register(client -> manager.tick());
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> manager.shutdown());
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> manager.playJoined());
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> manager.playDisconnected());
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> manager.serverStopping(server));
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> Minecraft.getInstance().execute(() -> manager.worlds.serverStopped(server)));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> manager.serverPlayer(handler.player.getUUID(), true));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> manager.serverPlayer(handler.player.getUUID(), false));
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {

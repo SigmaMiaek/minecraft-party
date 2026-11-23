@@ -160,7 +160,7 @@ export function runChecks() {
     assert(f.call('list', { protocol: 5 }).lobbies.length === 0, 'private room exposed to modern clients');
     for (const extra of [{ protocol: 4, limit: 9 }, { protocol: 5, limit: 11 }, { protocol: 5, limit: 10, players: 11 }])
       rejected(() => publish(fixture(), extra), 400);
-    for (const protocol of [3, 7, '5', true]) rejected(() => f.call('list', { protocol }), 400);
+    for (const protocol of [3, 8, '5', true]) rejected(() => f.call('list', { protocol }), 400);
   });
   test('watch-party protocol discovery is isolated from earlier clients', () => {
     const f = fixture(); publish(f, { protocol: 5, limit: 10 });
@@ -169,6 +169,14 @@ export function runChecks() {
     assert(f.call('list', { protocol: 5 }).lobbies.length === 1, 'MPT5 room lost');
     const list = f.call('list', { protocol: 6 });
     assert(list.protocol === 6 && list.lobbies.length === 1 && list.lobbies[0].code === modern.code, 'MPT6 missing');
+  });
+  test('world handoff protocol is advertised only to compatible clients', () => {
+    const f = fixture(); publish(f, { protocol: 6, limit: 10 });
+    const current = publish(f, { protocol: 7, limit: 10 });
+    assert(f.call('list', { protocol: 6 }).lobbies.length === 1, 'previous room missing');
+    const page = f.call('list', { protocol: 7 });
+    assert(page.protocol === 7 && page.lobbies.length === 1 && page.lobbies[0].code === current.code, 'MPT7 missing');
+    assert(f.call('list', {}).lobbies.length === 0, 'legacy client sees incompatible room');
   });
   return passed;
 }

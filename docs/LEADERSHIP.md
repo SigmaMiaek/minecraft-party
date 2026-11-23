@@ -1,5 +1,7 @@
 # Przekazywanie lidera — prototyp 0.7.0
 
+Od 0.11.0 osobna funkcja **Przekaż świat…** najpierw kopiuje zamknięty zapis do wybranego odbiorcy, a dopiero po poprawnym imporcie korzysta z opisanej tu zmiany lidera. Zwykła gwiazdka lub opuszczenie lobby nadal nie kopiuje świata. [Instrukcja przekazania świata](WORLD_TRANSFER.md).
+
 Wszyscy uczestnicy muszą zainstalować 0.7.0. Starsze wersje protokołu nie obsługują migracji.
 
 ## Ręcznie

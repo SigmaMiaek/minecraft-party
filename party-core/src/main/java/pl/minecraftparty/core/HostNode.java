@@ -3,6 +3,7 @@ package pl.minecraftparty.core;
 import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
+import java.nio.file.*;
 import java.security.GeneralSecurityException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -26,21 +27,49 @@ public final class HostNode implements AutoCloseable {
     private InetSocketAddress worldTarget;
     private UUID worldId;
     private boolean multiplayer;
-    private WatchState watch;
-    public synchronized WatchState watch() { return watch; }
-    public synchronized void startWatch(String videoId, WatchState.Placement placement) {
-        if (closed || worldId == null || leadershipPlan != null) throw new IllegalStateException("world unavailable");
-        watch = new WatchState(UUID.randomUUID(), worldId, videoId, placement, 0, 0, false, System.nanoTime()); publish();
+    public record WorldEvent(UUID sender, WorldPacket packet) { }
+    private volatile Consumer<WorldEvent> worldListener = event -> {};
+    private WorldGift worldGift;
+    private static final class WorldGift {
+        final UUID transaction, target;
+        final String name;
+        boolean accepted;
+        Path archive;
+        WorldArchive.Info info;
+        final AtomicLong sent = new AtomicLong();
+        WorldGift(UUID transaction, UUID target, String name) { this.transaction = transaction; this.target = target; this.name = name; }
     }
-    public synchronized void playWatch(boolean playing) {
-        if (watch == null) throw new IllegalStateException("no watch session");
-        long now = System.nanoTime(); watch = watch.control(watch.positionAt(now), playing, now); publish();
+    public void worldListener(Consumer<WorldEvent> listener) { worldListener = Objects.requireNonNull(listener); }
+    public synchronized WorldPacket.Offer offerWorld(UUID target, String name) {
+        return offerWorld(UUID.randomUUID(), target, name);
     }
-    public synchronized void seekWatch(long position) {
-        if (watch == null) throw new IllegalStateException("no watch session");
-        watch = watch.control(position, watch.playing(), System.nanoTime()); publish();
+    public synchronized WorldPacket.Offer offerWorld(UUID transaction, UUID target, String name) {
+        if (closed || worldGift != null || leadershipPlan != null || !controls.containsKey(target)) throw new IllegalStateException("world transfer unavailable");
+        var offer = new WorldPacket.Offer(transaction, name); worldGift = new WorldGift(offer.transaction(), target, offer.name());
+        controls.get(target).sendWorld(offer); return offer;
     }
-    public synchronized void stopWatch() { watch = null; publish(); }
+    public synchronized void worldSaving(UUID transaction) {
+        if (worldGift == null || !worldGift.transaction.equals(transaction) || !worldGift.accepted) throw new IllegalStateException("world consent");
+        Control control = controls.get(worldGift.target); if (control == null) throw new IllegalStateException("recipient offline");
+        control.sendWorld(new WorldPacket.Saving(transaction));
+    }
+    public synchronized void worldArchive(UUID transaction, Path archive, WorldArchive.Info info) {
+        if (worldGift == null || !worldGift.transaction.equals(transaction) || !worldGift.accepted || !info.owner().equals(hostId))
+            throw new IllegalStateException("world consent");
+        Control control = controls.get(worldGift.target);
+        worldGift.archive = archive; worldGift.info = info;
+        if (control != null) control.sendWorld(new WorldPacket.Archive(transaction, info));
+    }
+    public synchronized long worldBytesSent(UUID transaction) { return worldGift != null && worldGift.transaction.equals(transaction) ? worldGift.sent.get() : 0; }
+    public synchronized void finishWorldTransfer(UUID transaction) {
+        if (worldGift != null && worldGift.transaction.equals(transaction)) worldGift = null;
+    }
+    public synchronized void cancelWorldTransfer(UUID transaction) {
+        if (worldGift == null || !worldGift.transaction.equals(transaction)) return;
+        Control control = controls.get(worldGift.target);
+        if (control != null) { SocketPipe.close(control.file); control.sendWorld(new WorldPacket.Cancel(transaction)); }
+        worldGift = null;
+    }
     public record LeadershipEvent(UUID sender, LeadershipPacket packet) { }
     private volatile Consumer<LeadershipEvent> leadershipListener = event -> {};
     private LeadershipPlan leadershipPlan;
@@ -91,7 +120,7 @@ public final class HostNode implements AutoCloseable {
     public LobbyState snapshot() { return model.snapshot(); }
     public void leadershipListener(Consumer<LeadershipEvent> listener) { leadershipListener = Objects.requireNonNull(listener); }
     public synchronized LeadershipPlan planLeadership(UUID target, boolean leaving) {
-        if (closed || leadershipPlan != null || !controls.containsKey(target) || worldId != null)
+        if (closed || leadershipPlan != null || worldGift != null || !controls.containsKey(target) || worldId != null)
             throw new IllegalStateException("leadership unavailable");
         Map<UUID, String> credentials = new HashMap<>(model.migrationCredentials()); credentials.remove(target);
         if (!leaving) credentials.put(hostId, Secrets.token());
@@ -143,7 +172,6 @@ public final class HostNode implements AutoCloseable {
         boolean accepted = model.chat(hostId, text); if (accepted) publish(); return accepted;
     }
     public synchronized void closeWorld() {
-        watch = null;
         worldTarget = null; worldId = null; multiplayer = false;
         playersInWorld.clear();
         controls.values().forEach(Control::closeTunnel);
@@ -192,6 +220,7 @@ public final class HostNode implements AutoCloseable {
         if (!party.equals(model.snapshot().partyId())) { protocolRejected.incrementAndGet(); return; }
         if (mode == Wire.CONTROL) control(socket, in, out, id);
         else if (mode == Wire.TUNNEL) tunnel(socket, in, out, id);
+        else if (mode == Wire.WORLD_FILE) worldFile(socket, in, out, id);
     }
     private void control(SSLSocket socket, DataInputStream in, DataOutputStream out, UUID id) throws IOException {
         String name = Wire.text(in, 16), secret = Wire.text(in, 43), resume = Wire.text(in, 43);
@@ -210,7 +239,12 @@ public final class HostNode implements AutoCloseable {
             lobbyAccepted.incrementAndGet();
             control.credential = null;
             Thread.ofVirtual().name("party-host-updates").start(control::writeUpdates);
-            synchronized (this) { publish(); }
+            synchronized (this) {
+                publish();
+                if (worldGift != null && worldGift.target.equals(id)) control.sendWorld(worldGift.info != null
+                        ? new WorldPacket.Archive(worldGift.transaction, worldGift.info) : worldGift.accepted
+                        ? new WorldPacket.Saving(worldGift.transaction) : new WorldPacket.Offer(worldGift.transaction, worldGift.name));
+            }
             long window = System.nanoTime(); int commands = 0;
             while (!closed) {
                 int command = in.readUnsignedByte();
@@ -230,6 +264,18 @@ public final class HostNode implements AutoCloseable {
                 } else if (command == Wire.CHAT) {
                     String text = Wire.text(in, LobbyModel.MAX_CHAT_LENGTH);
                     synchronized (this) { if (leadershipPlan == null && model.chat(id, text)) publish(); }
+                } else if (WorldPacket.isKind(command)) {
+                    if (command != 41 && command != 43 && command != 44) throw new IOException("world transfer direction");
+                    WorldPacket packet = WorldPacket.read(command, in);
+                    synchronized (this) {
+                        if (worldGift == null || !worldGift.transaction.equals(packet.transaction())) continue;
+                        if (!worldGift.target.equals(id)) throw new IOException("world transfer authority");
+                        if (packet instanceof WorldPacket.Accept) {
+                            if (worldGift.accepted) continue;
+                            worldGift.accepted = true;
+                        } else if (packet instanceof WorldPacket.Imported && worldGift.info == null) throw new IOException("world transfer phase");
+                    }
+                    worldListener.accept(new WorldEvent(id, packet));
                 } else if (command >= 20 && command <= 26) {
                     if (command != 21 && command != 24 && command != 25) throw new IOException("leadership direction");
                     LeadershipPacket packet = LeadershipPacket.read(command, in);
@@ -250,7 +296,7 @@ public final class HostNode implements AutoCloseable {
                     if (!(packet instanceof LeadershipPacket.Ack)) leadershipListener.accept(new LeadershipEvent(id, packet));
                 } else if (command != Wire.PING) throw new IOException("command");
                 // A periodic snapshot is also a server heartbeat, independent of state revisions.
-                synchronized (this) { control.offer(model.snapshot(), watch); }
+                synchronized (this) { control.offer(model.snapshot()); }
             }
         } finally {
             synchronized (this) {
@@ -282,9 +328,38 @@ public final class HostNode implements AutoCloseable {
             synchronized (this) { if (control.tunnel == socket) control.closeTunnel(); }
         }
     }
+    private void worldFile(SSLSocket socket, DataInputStream in, DataOutputStream out, UUID id) throws IOException, InterruptedException {
+        String resume = Wire.text(in, 43); UUID transaction = Wire.uuid(in); long offset = in.readLong();
+        Control control; WorldGift gift;
+        synchronized (this) {
+            control = controls.get(id); gift = worldGift;
+            if (closed || control == null || !model.authenticate(id, resume) || gift == null || !gift.accepted
+                    || !gift.target.equals(id) || !gift.transaction.equals(transaction) || gift.archive == null || gift.info == null
+                    || offset < 0 || offset > gift.info.bytes()) { out.writeByte(Wire.ERROR); out.flush(); return; }
+            if (control.file != null) { out.writeByte(Wire.RETRY); out.flush(); return; }
+            control.file = socket;
+        }
+        CompletableFuture<Void> copied = new CompletableFuture<>();
+        // One selected recipient, one bounded platform writer. Avoid virtual-thread bulk TLS stalls on Windows.
+        Thread.ofPlatform().daemon().name("party-world-file").start(() -> {
+            try (InputStream file = Files.newInputStream(gift.archive, LinkOption.NOFOLLOW_LINKS)) {
+                file.skipNBytes(offset); out.writeByte(Wire.WELCOME); out.writeLong(gift.info.bytes() - offset); out.flush();
+                byte[] buffer = new byte[65536]; long sent = offset;
+                while (sent < gift.info.bytes()) {
+                    int n = file.read(buffer, 0, (int) Math.min(buffer.length, gift.info.bytes() - sent));
+                    if (n < 0) throw new EOFException("archive truncated");
+                    out.write(buffer, 0, n); sent += n; gift.sent.set(sent);
+                }
+                out.flush(); copied.complete(null);
+            } catch (Throwable e) { copied.completeExceptionally(e); }
+        });
+        try { copied.get(2, TimeUnit.HOURS); }
+        catch (ExecutionException | TimeoutException e) { throw new IOException("world transfer stream", e); }
+        finally { synchronized (this) { if (control.file == socket) { SocketPipe.close(socket); control.file = null; } } }
+    }
     private synchronized void publish() {
         LobbyState snapshot = model.snapshot();
-        controls.values().forEach(c -> c.offer(snapshot, watch));
+        controls.values().forEach(c -> c.offer(snapshot));
         onState.accept(snapshot);
     }
     @Override public synchronized void close() {
@@ -299,15 +374,16 @@ public final class HostNode implements AutoCloseable {
         final String name;
         final SSLSocket socket;
         final DataOutputStream out;
-        record Outbound(LobbyState snapshot, LeadershipPacket signal, WatchState watch) { }
+        record Outbound(LobbyState snapshot, LeadershipPacket signal, WorldPacket world) { }
         final ArrayBlockingQueue<Outbound> updates = new ArrayBlockingQueue<>(16);
         volatile boolean closed;
-        Socket tunnel, backend;
+        Socket tunnel, backend, file;
         Thread writer;
         String credential;
         Control(UUID id, String name, SSLSocket socket, DataOutputStream out) { this.id = id; this.name = name; this.socket = socket; this.out = out; }
-        void offer(LobbyState state, WatchState watch) { updates.removeIf(m -> m.snapshot() != null); updates.offer(new Outbound(state, null, watch)); }
+        void offer(LobbyState state) { updates.removeIf(m -> m.snapshot() != null); updates.offer(new Outbound(state, null, null)); }
         void send(LeadershipPacket signal) { if (!updates.offer(new Outbound(null, signal, null))) Thread.ofVirtual().start(this::close); }
+        void sendWorld(WorldPacket packet) { if (!updates.offer(new Outbound(null, null, packet))) Thread.ofVirtual().start(this::close); }
         void writeUpdates() {
             writer = Thread.currentThread();
             try {
@@ -315,8 +391,8 @@ public final class HostNode implements AutoCloseable {
                     var message = updates.take();
                     if (message.snapshot() != null) {
                         out.writeByte(Wire.SNAPSHOT); Wire.snapshot(out, message.snapshot());
-                        out.writeByte(Wire.WATCH); WatchWire.write(out, message.watch());
                     }
+                    else if (message.world() != null) WorldPacket.write(out, message.world());
                     else LeadershipPacket.write(out, message.signal());
                     out.flush();
                 }
@@ -324,6 +400,6 @@ public final class HostNode implements AutoCloseable {
             catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
         void closeTunnel() { SocketPipe.close(tunnel); SocketPipe.close(backend); tunnel = null; backend = null; }
-        public void close() { closed = true; SocketPipe.close(socket); closeTunnel(); if (writer != null) writer.interrupt(); }
+        public void close() { closed = true; SocketPipe.close(socket); closeTunnel(); SocketPipe.close(file); if (writer != null) writer.interrupt(); }
     }
 }

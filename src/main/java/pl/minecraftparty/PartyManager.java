@@ -22,7 +22,7 @@ public final class PartyManager {
     public final PartyWorldPermissions permissions;
     public final PartyCodes codes;
     public final PartyLeadership leadership;
-    public final pl.minecraftparty.watch.WatchManager watch;
+    public final WorldTransferManager worlds;
     private HostNode host;
     private GuestNode guest;
     private LobbyState state;
@@ -71,7 +71,7 @@ public final class PartyManager {
         this.client = client; config = PartyConfig.load(); permissions = new PartyWorldPermissions(this::message);
         codes = new PartyCodes(this, client);
         leadership = new PartyLeadership(this, client);
-        watch = new pl.minecraftparty.watch.WatchManager(client, this);
+        worlds = new WorldTransferManager(this, client);
         bridge = new IntegratedServerBridge(this); sessions = new ClientSessionManager(this, client);
     }
     public LobbyState state() { return state; }
@@ -79,12 +79,8 @@ public final class PartyManager {
     public GuestNode guest() { return guest; }
     public String invite() { return invite; }
     public String message() { return message; }
-    public boolean busy() { return busy || leadership.busy(); }
+    public boolean busy() { return busy || leadership.busy() || worlds.busy(); }
     public boolean active() { return host != null || guest != null || busy; }
-    public boolean inPartyWorld() {
-        return client.level != null && state != null && state.worldId() != null
-                && (host != null || guest != null && sessions.partyConnection());
-    }
     public boolean canChat() { return !leadership.busy() && (host != null || guest != null && guest.connected()); }
     public boolean chat(String text) {
         String clean = text.strip();
@@ -198,7 +194,8 @@ public final class PartyManager {
                         next -> client.execute(() -> { if (generation == operation) {
                             message = next;
                             if (!next.equals("connected") && !next.equals("reconnecting")) PartyClient.LOG.info("Party connection result: {}", next);
-                        } }), packet -> client.execute(() -> { if (generation == operation) leadership.receive(reference.get(), packet); }));
+                        } }), packet -> client.execute(() -> { if (generation == operation) leadership.receive(reference.get(), packet); }),
+                        packet -> client.execute(() -> { if (generation == operation) worlds.receive(reference.get(), packet); }));
                 reference.set(node);
                 client.execute(() -> {
                     if (generation != operation) { background(node::close); return; }
@@ -211,7 +208,7 @@ public final class PartyManager {
         client.execute(() -> { if (generation == operation) { busy = false; message = text; if (host == null && guest == null) state = null; } });
     }
     public void rotateInvite() {
-        HostNode node = host; if (node == null || leadership.busy()) return;
+        HostNode node = host; if (node == null || leadership.busy() || worlds.busy()) return;
         codes.reset();
         invite = "";
         int operation = generation;
@@ -221,7 +218,7 @@ public final class PartyManager {
             client.execute(() -> { if (generation == operation) { invite = code; message = code.isEmpty() ? relay != null ? "relay_lost" : "internet_lost" : "rotated"; } }); });
     }
     public void kick(UUID id) {
-        HostNode node = host; if (node == null || leadership.busy()) return;
+        HostNode node = host; if (node == null || leadership.busy() || worlds.busy()) return;
         codes.reset();
         invite = "";
         int operation = generation;
@@ -232,12 +229,13 @@ public final class PartyManager {
             client.execute(() -> { if (generation == operation) invite = code; }); });
     }
     public void leave() {
+        if (worlds.busy()) { message("gift_busy"); return; }
         if (leadership.busy()) { message = "leader_busy"; return; }
         if (host != null && leadership.leave()) return;
         leaveImmediately();
     }
     void leaveImmediately() {
-        watch.reset();
+        worlds.reset();
         leadership.reset();
         codes.reset();
         previousDiagnostics = host != null ? hostDiagnostics() : guest != null ? "Target TCP port: " + targetPort + "\n" + guest.diagnostics() : previousDiagnostics;
@@ -255,13 +253,13 @@ public final class PartyManager {
         catch (IllegalStateException e) { return ""; }
     }
     public void tick() {
-        watch.tick();
+        worlds.tick();
         leadership.tick();
         if (!leadership.busy()) codes.tick();
         if (!leadership.busy()) {
             if (waitForMenuBeforeSharing && client.level == null && client.getConnection() == null && client.getSingleplayerServer() == null)
                 waitForMenuBeforeSharing = false;
-            if (!waitForMenuBeforeSharing) { bridge.tick(client); syncMultiplayer(); }
+            if (!waitForMenuBeforeSharing && !worlds.holdsWorld()) { bridge.tick(client); syncMultiplayer(); }
             permissions.update(state); sessions.tick();
         }
         if (returnPending && active() && client.level == null && client.getSingleplayerServer() == null
@@ -300,9 +298,10 @@ public final class PartyManager {
     public void background(Runnable action) { worker.execute(action); }
     public void message(String key) { client.execute(() -> message = key); }
     public void returnToParty() { client.execute(() -> returnPending = active()); }
-    public void shutdown() { leaveImmediately(); worker.shutdown(); }
+    public void shutdown() { leaveImmediately(); worlds.shutdown(); worker.shutdown(); }
     private void observeHost(HostNode node) {
         node.leadershipListener(event -> client.execute(() -> leadership.hostEvent(node, event)));
+        node.worldListener(event -> client.execute(() -> worlds.hostEvent(node, event)));
     }
     void acceptHostState(HostNode node, LobbyState next) { if (host == node) state = next; }
     void relayLost(String key) { invite = ""; message = key; }
@@ -319,8 +318,10 @@ public final class PartyManager {
         waitForMenuBeforeSharing = client.level != null || client.getConnection() != null || client.getSingleplayerServer() != null;
         observeHost(next); message = "leader_changed";
         if (previous != null) background(previous::close);
+        worlds.promoted();
     }
     void migrateGuest(Invite next, String resume) {
+        worlds.committedOutgoing();
         HostNode previousHost = host; GuestNode previousGuest = guest;
         E4mcRelay previousRelay = relayExposure; InternetExposure previousExposure = internetExposure;
         int operation = ++generation;

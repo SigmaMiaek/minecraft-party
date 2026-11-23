@@ -3,10 +3,13 @@ package pl.minecraftparty.core;
 import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
+import java.nio.file.*;
 import java.security.GeneralSecurityException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
+import java.util.function.LongConsumer;
 
 /** Reconnect credentials stay in memory; the UI never receives them. */
 public final class GuestNode implements AutoCloseable {
@@ -19,17 +22,18 @@ public final class GuestNode implements AutoCloseable {
     private final AtomicReference<Socket> pending = new AtomicReference<>();
     private volatile boolean closed, connected;
     private volatile SSLSocket control;
+    private volatile SSLSocket worldDownload;
+    public void cancelWorldDownload() { SocketPipe.close(worldDownload); }
     private volatile DataOutputStream controlOut;
     private volatile String resume = "";
     private volatile LobbyState.Status status = LobbyState.Status.LOBBY;
     private volatile LobbyState state;
-    private volatile WatchState watch;
-    public WatchState watch() { return watch; }
     private LocalProxy proxy;
     private final Thread worker;
     private final ConnectionTrace trace = new ConnectionTrace();
     private volatile int connectedCandidate;
     private final Consumer<LeadershipPacket> leadershipListener;
+    private final Consumer<WorldPacket> worldListener;
 
     public GuestNode(Invite invite, UUID id, String name, Consumer<LobbyState> onState, Consumer<String> onConnection)
             throws GeneralSecurityException {
@@ -37,9 +41,14 @@ public final class GuestNode implements AutoCloseable {
     }
     public GuestNode(Invite invite, UUID id, String name, String resume, Consumer<LobbyState> onState,
                      Consumer<String> onConnection, Consumer<LeadershipPacket> leadershipListener) throws GeneralSecurityException {
+        this(invite, id, name, resume, onState, onConnection, leadershipListener, packet -> {});
+    }
+    public GuestNode(Invite invite, UUID id, String name, String resume, Consumer<LobbyState> onState,
+                     Consumer<String> onConnection, Consumer<LeadershipPacket> leadershipListener, Consumer<WorldPacket> worldListener) throws GeneralSecurityException {
         this.invite = invite; this.id = id; this.name = LobbyModel.validName(name, 16);
         if (!resume.isEmpty() && !resume.matches("[A-Za-z0-9_-]{43}")) throw new IllegalArgumentException("credential");
         this.resume = resume; this.leadershipListener = leadershipListener;
+        this.worldListener = worldListener;
         this.onState = onState; this.onConnection = onConnection; this.tls = TlsIdentity.client(invite.fingerprint());
         worker = Thread.ofVirtual().name("party-guest-control").start(this::run);
     }
@@ -49,6 +58,51 @@ public final class GuestNode implements AutoCloseable {
     public LobbyState snapshot() { return state; }
     public void status(LobbyState.Status value) { status = value; }
     public String migrationCredential() { return resume; }
+    public void worldPacket(WorldPacket packet) throws IOException {
+        if (!(packet instanceof WorldPacket.Accept || packet instanceof WorldPacket.Imported || packet instanceof WorldPacket.Cancel)) throw new IOException("direction");
+        DataOutputStream out = controlOut;
+        if (!connected || closed || out == null) throw new IOException("not connected");
+        synchronized (out) { WorldPacket.write(out, packet); out.flush(); }
+    }
+    /** Runs on the transfer worker. Partial downloads resume while the same authenticated lobby reconnects. */
+    public void downloadWorld(UUID transaction, WorldArchive.Info info, Path destination, BooleanSupplier cancelled, LongConsumer progress) throws IOException, InterruptedException {
+        if (!Files.exists(destination, LinkOption.NOFOLLOW_LINKS)) Files.createFile(destination);
+        if (Files.isSymbolicLink(destination) || !Files.isRegularFile(destination, LinkOption.NOFOLLOW_LINKS) || Files.size(destination) > info.bytes())
+            throw new IOException("world download destination");
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.HOURS.toNanos(2), lastProgress = System.nanoTime();
+        long position = Files.size(destination); progress.accept(position);
+        while (position < info.bytes()) {
+            WorldArchive.checkCancelled(cancelled);
+            if (closed || System.nanoTime() > deadline || System.nanoTime() - lastProgress > 110_000_000_000L) throw new IOException("world download timeout");
+            if (!connected) { Thread.sleep(500); continue; }
+            try (var connection = connect()) {
+                SSLSocket socket = connection.socket(); socket.setSoTimeout(45000);
+                worldDownload = socket;
+                var out = new DataOutputStream(socket.getOutputStream()); var in = new DataInputStream(socket.getInputStream());
+                header(out, Wire.WORLD_FILE); out.writeUTF(resume); Wire.uuid(out, transaction); out.writeLong(position); out.flush();
+                int response = in.readUnsignedByte();
+                if (response == Wire.RETRY) throw new SocketException("world stream retry");
+                if (response != Wire.WELCOME) throw new SecurityException("world transfer rejected");
+                if (in.readLong() != info.bytes() - position) throw new IOException("world stream size");
+                try (OutputStream file = Files.newOutputStream(destination, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS)) {
+                    byte[] buffer = new byte[65536];
+                    while (position < info.bytes()) {
+                        WorldArchive.checkCancelled(cancelled);
+                        int n = in.read(buffer, 0, (int) Math.min(buffer.length, info.bytes() - position));
+                        if (n < 0) throw new EOFException("world stream interrupted");
+                        file.write(buffer, 0, n); position += n; lastProgress = System.nanoTime(); progress.accept(position);
+                    }
+                }
+            } catch (IOException e) {
+                WorldArchive.checkCancelled(cancelled);
+                if (System.nanoTime() - lastProgress > 110_000_000_000L) throw e;
+                position = Files.size(destination);
+                if (position > info.bytes()) throw new IOException("world download size");
+                Thread.sleep(2000);
+            } finally { worldDownload = null; }
+        }
+        WorldArchive.verify(destination, info, cancelled);
+    }
     public void leadership(LeadershipPacket packet) throws IOException {
         if (!(packet instanceof LeadershipPacket.Ready || packet instanceof LeadershipPacket.Failed)) throw new IOException("direction");
         DataOutputStream out = controlOut;
@@ -80,12 +134,9 @@ public final class GuestNode implements AutoCloseable {
                 try {
                     while (!closed) {
                         int kind = in.readUnsignedByte();
-                        if (kind == Wire.WATCH) {
-                            WatchState next = WatchWire.read(in);
-                            if (next != null && (state == null || !next.worldId().equals(state.worldId())
-                                    || watch != null && watch.sessionId().equals(next.sessionId()) && next.revision() < watch.revision()))
-                                throw new IOException("watch session");
-                            watch = next; continue;
+                        if (WorldPacket.isKind(kind)) {
+                            if (kind != 40 && kind != 42 && kind != 44 && kind != 45) throw new IOException("world transfer direction");
+                            worldListener.accept(WorldPacket.read(kind, in)); continue;
                         }
                         if (kind >= 20 && kind <= 26) {
                             if (kind != 20 && kind != 22 && kind != 23 && kind != 26) throw new IOException("leadership direction");
@@ -185,6 +236,7 @@ public final class GuestNode implements AutoCloseable {
     public synchronized void stopProxy() { SocketPipe.close(proxy); proxy = null; }
     @Override public void close() {
         closed = true;
+        cancelWorldDownload();
         // Closing sockets is non-blocking; graceful leave is best effort on a separate thread.
         SSLSocket socket = control; DataOutputStream out = controlOut;
         if (socket != null && out != null) Thread.ofVirtual().start(() -> {

@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.*;
 final class PublicPartyTest {
     private JsonObject page() {
         return JsonParser.parseString("""
-                {"publicLobbies":true,"protocol":6,"page":0,"pages":1,"lobbies":[
+                {"publicLobbies":true,"protocol":7,"page":0,"pages":1,"lobbies":[
                  {"code":"001234","name":"Przygoda 🎮","host":"Host","players":2,"limit":6,
-                  "inWorld":false,"minecraft":"26.2","protocol":6}]}
+                  "inWorld":false,"minecraft":"26.2","protocol":7}]}
                 """).getAsJsonObject();
     }
     @Test void publicNamesLeadingZeroesAndCapacityAreReadWithoutAddresses() throws Exception {
@@ -33,7 +33,7 @@ final class PublicPartyTest {
         assertTrue(ShortCodeClient.parsePublicPage(full, 0, 8).lobbies().getFirst().full());
         row.addProperty("limit", 11);
         assertThrows(ShortCodeClient.Failure.class, () -> ShortCodeClient.parsePublicPage(full, 0, 8));
-        for (int protocol : new int[]{4, 5, 7}) {
+        for (int protocol : new int[]{4, 5, 6, 8}) {
             var old = page(); old.addProperty("protocol", protocol);
             assertEquals("public_update_required", assertThrows(ShortCodeClient.Failure.class,
                     () -> ShortCodeClient.parsePublicPage(old, 0, 8)).key());
