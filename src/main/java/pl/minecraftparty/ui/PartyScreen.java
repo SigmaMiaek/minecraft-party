@@ -174,8 +174,11 @@ public final class PartyScreen extends Screen {
                 (state == null || state.worldId() == null) + ":" +
                 (state == null ? "" : state.members().stream().map(m -> m.id().toString()).toList());
     }
-    @Override public void tick() {
+    private void refreshLayout() {
         if (!layoutKey.equals(layoutKey())) rebuildWidgets();
+    }
+    @Override public void tick() {
+        refreshLayout();
         updateButtons();
         if (browser != null && showPublic()) browser.tick();
     }
@@ -205,6 +208,9 @@ public final class PartyScreen extends Screen {
                 && manager.guest().connected() && manager.state() != null && manager.state().worldId() != null && minecraft.level == null;
     }
     @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        // A click or a queued network result can change Party after the last tick.
+        // Build the matching controls and landing layout before drawing this frame.
+        refreshLayout();
         background(graphics, width, height);
         centered(graphics, font, title, width, 12, 0xFFFFFFFF);
         LobbyState state = manager.state();
