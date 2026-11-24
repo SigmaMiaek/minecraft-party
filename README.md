@@ -1,8 +1,10 @@
-# Minecraft Party — prototyp 0.11.0
+# Minecraft Party — prototyp 0.11.1
 
 **Strona projektu:** [Minecraft Party](https://sigmamiaek.github.io/minecraft-party/) — opis funkcji, podgląd lobby, instalacja i pobieranie. Źródła strony znajdują się w [website/](website/README.md).
 
-**Pobierz:** [wydania Minecraft Party](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.11.0 jest publikowane po udanej kompilacji i testach Windows/Linux oraz katalogu kodów. [Starsze lokalne prototypy](downloads/README.md) pozostają dostępne.
+**Pobierz:** [wydania Minecraft Party](https://github.com/SigmaMiaek/minecraft-party/releases). Wydanie 0.11.1 jest publikowane po udanej kompilacji i testach Windows/Linux oraz katalogu kodów. [Starsze lokalne prototypy](downloads/README.md) pozostają dostępne.
+
+**Nowe w 0.11.1:** mały przycisk Party z ikoną trzech graczy w rzędzie ikon menu głównego, za ostatnią sąsiednią ikoną (także przy Mod Menu). Ma standardowe tło vanilla, podpowiedź po polsku lub angielsku i obsługę klawiatury. Skrót **P** nadal otwiera Party w zastąpionych menu. Wydanie zachowuje protokół MPT7 i zgodność z 0.11.0. [Szczegóły wydania](docs/releases/0.11.1+26.2.md).
 
 **Nowe w 0.11.0:** **Przekaż świat…** — wybór jednego odbiorcy, jego zgoda, końcowy zapis i zamknięcie świata, przesłanie sprawdzonej kopii, zmiana lidera oraz automatyczne otwarcie u nowego hosta. Oryginał zostaje u poprzedniego hosta; nowe kopie nie nadpisują istniejących zapisów. Gra ma przerwę na zapis i przesłanie. **Watch Party usunięto całkowicie, Rinku nie jest wymagane. Wszyscy instalują 0.11.0 (MPT7); Worker z main.** [Instrukcja i ograniczenia](docs/WORLD_TRANSFER.md) · [wydanie](docs/releases/0.11.0+26.2.md). Pełnego testu z dwoma uruchomionymi klientami Minecraft jeszcze nie wykonano.
 
@@ -19,7 +21,7 @@ Niezależny mod kliencki Fabric z lobby istniejącym poza światem i szyfrowanym
 ## Instalacja prototypu
 
 1. Obaj gracze instalują Minecraft Java **26.2**, Fabric Loader **0.19.3 lub nowszy zgodny z 26.2**, Fabric API **0.161.0+26.2** i Java **25**.
-2. Skopiuj `build/libs/minecraft-party-0.11.0+26.2.jar` do katalogu `mods` każdej instancji. Usuń poprzedni JAR Party i uruchom ponownie Minecrafta. Instalowanie moda e4mc nie jest wymagane.
+2. Skopiuj `build/libs/minecraft-party-0.11.1+26.2.jar` do katalogu `mods` każdej instancji. Usuń poprzedni JAR Party i uruchom ponownie Minecrafta. Instalowanie moda e4mc nie jest wymagane.
 3. Użyj dwóch różnych, prawidłowo zalogowanych kont Minecraft. Ten prototyp zachowuje logowanie vanilla; uruchomienie developerskie bez sesji Microsoft nie sprawdza prawdziwego dołączania do świata.
 4. Host tworzy Party. Mod automatycznie korzysta z e4mc i domyślnej usługi kodów. Przy pierwszej próbie pobiera zweryfikowaną bibliotekę natywną; potrzebne są HTTPS i wychodzące UDP.
 5. Znajomy wpisuje sześć cyfr i od razu rozpoczyna połączenie. Szczegóły: [Kody Party](docs/CLOUDFLARE.md).

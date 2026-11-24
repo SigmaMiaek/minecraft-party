@@ -18,6 +18,7 @@ import net.minecraft.network.chat.Component;
 import pl.minecraftparty.ui.PartyScreen;
 import pl.minecraftparty.ui.PartyTitlePanel;
 import pl.minecraftparty.ui.PartyPausePanel;
+import pl.minecraftparty.ui.PartyMenuButton;
 
 public final class PartyClient implements ClientModInitializer {
     public static final Logger LOG = LoggerFactory.getLogger("MinecraftParty");
@@ -34,12 +35,14 @@ public final class PartyClient implements ClientModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> manager.serverPlayer(handler.player.getUUID(), true));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> manager.serverPlayer(handler.player.getUUID(), false));
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
-            if (screen instanceof TitleScreen || screen instanceof PauseScreen) {
-                if (screen instanceof PauseScreen pause) PartyPausePanel.install(client, pause, manager);
+            if (screen instanceof TitleScreen title) {
+                PartyMenuButton.install(client, title);
+                PartyTitlePanel.install(client, screen, manager);
+            } else if (screen instanceof PauseScreen pause) {
+                PartyPausePanel.install(client, pause, manager);
                 Screens.getWidgets(screen).add(Button.builder(Component.literal("Party"),
                         button -> client.gui.setScreen(new PartyScreen(screen)))
                         .bounds(width - 76, 6, 70, 20).build());
-                if (screen instanceof TitleScreen) PartyTitlePanel.install(client, screen, manager);
             }
         });
     }
